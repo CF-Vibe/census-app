@@ -1627,7 +1627,7 @@
             }
             
             // Check if any other household member has claimed
-            const claimant = residents.find(r => householdIds.includes(r.id) && r.donationClaimed && r.id !== residentId);
+            const claimant = residents.find(r => householdIds.includes(r.id) && (r.donationClaimed === true || r.donationClaimed === 'true') && r.id !== residentId);
             return claimant || null;
         }
 
@@ -1664,7 +1664,7 @@
                 }
                 
                 // Count aids delivered
-                if (r.donationClaimed) {
+                if (r.donationClaimed === true || r.donationClaimed === 'true') {
                     aidCount++;
                 }
             });
@@ -1784,15 +1784,6 @@
                         const addrInput = document.getElementById("address");
                         if (addrInput && addrInput.value !== heads[0].address) {
                             addrInput.value = heads[0].address;
-                            showToast(
-                                t("label_address"),
-                                lang === 'zh' 
-                                    ? `已自动复制户主 [${heads[0].name}] 的地址！`
-                                    : (lang === 'ms' 
-                                       ? `Alamat Ketua Keluarga [${heads[0].name}] disalin secara automatik!` 
-                                       : `Copied address from Family Head [${heads[0].name}]!`),
-                                "info"
-                            );
                         }
                     }
                 } else {
@@ -2037,7 +2028,7 @@
 
                 // Donation Claim Badges
                 let donationBadge = "";
-                if (rec.donationClaimed) {
+                if (rec.donationClaimed === true || rec.donationClaimed === 'true') {
                     const itemName = rec.donationItem || "Aid Pack";
                     donationBadge = `<span class="badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;"><i class="fas fa-gift" style="margin-right: 4px;"></i> ${itemName}</span>`;
                 } else {
@@ -2330,7 +2321,7 @@
             const itemInputGroup = document.getElementById("dmItemInputGroup");
             const itemInput = document.getElementById("dmItemInput");
             
-            if (resident.donationClaimed) {
+            if (resident.donationClaimed === true || resident.donationClaimed === 'true') {
                 claimedSelect.value = "claimed";
                 itemInputGroup.style.display = "flex";
                 itemInput.value = resident.donationItem || "";
@@ -2574,7 +2565,7 @@
                         'Household Role / Peranan / 户口角色': roleStr,
                         'Family Head Name / Ketua Keluarga / 所属户主': headObj ? headObj.name : '—',
                         'Address / Alamat / 住宅地址': r.address || '—',
-                        'Aid Status / Status Bantuan / 领取状态': r.donationClaimed ? 'Claimed / Telah Dituntut / 已领取' : 'Unclaimed / Belum Dituntut / 尚未领取',
+                        'Aid Status / Status Bantuan / 领取状态': (r.donationClaimed === true || r.donationClaimed === 'true') ? 'Claimed / Telah Dituntut / 已领取' : 'Unclaimed / Belum Dituntut / 尚未领取',
                         'Aid Item / Barang Sumbangan / 物资名称': r.donationItem || '—',
                         'Claim Date / Masa Tuntutan / 领取时间': r.donationTime ? new Date(r.donationTime).toLocaleString() : '—'
                     };
@@ -2654,15 +2645,6 @@
                     const headObj = residents.find(r => r.id === headId);
                     if (headObj && headObj.address) {
                         document.getElementById("address").value = headObj.address;
-                        showToast(
-                            t("label_address"),
-                            localStorage.getItem('app_language') === 'zh' 
-                                ? `已自动复制户主 [${headObj.name}] 的地址！`
-                                : (localStorage.getItem('app_language') === 'ms' 
-                                   ? `Alamat Ketua Keluarga [${headObj.name}] disalin secara automatik!` 
-                                   : `Copied address from Family Head [${headObj.name}]!`),
-                            "info"
-                        );
                     }
                 }
             });
