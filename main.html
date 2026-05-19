@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- localForage for IndexedDB storage -->
     <script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+    <!-- SheetJS Library for Genuine Excel (.xlsx) Generation -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #1e3a8a;
@@ -867,11 +869,27 @@
                                 <option value="member" data-i18n="opt_family_member">Family Member</option>
                             </select>
                         </div>
-                        <div class="input-group" id="familyHeadGroup" style="display: none;">
-                            <label for="familyHeadId" data-i18n="label_family_head"><i class="fas fa-user-tie"></i> Select Family Head *</label>
-                            <select id="familyHeadId">
+                        <div class="input-group" id="familyHeadGroup" style="display: none; gap: 10px;">
+                            <label for="familyHeadId" data-i18n="label_family_head" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <span><i class="fas fa-user-tie"></i> Select Family Head *</span>
+                                <span id="headSearchCount" style="font-size: 0.72rem; color: var(--primary); font-weight: 600; display: none;"></span>
+                            </label>
+                            
+                            <!-- Search Magnifier Bar for Family Head -->
+                            <div class="search-input-wrapper" style="width: 100%; margin-bottom: 2px;">
+                                <i class="fas fa-search" style="left: 12px; font-size: 0.8rem; color: var(--slate-400); top: 50%; transform: translateY(-50%);"></i>
+                                <input type="text" id="familyHeadSearch" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Search Family Head by name or NRIC..." style="padding-left: 34px; height: 38px; border-radius: var(--radius-sm); font-size: 0.85rem;" data-i18n-placeholder="placeholder_search_head">
+                            </div>
+                            
+                            <select id="familyHeadId" style="height: 42px;">
                                 <option value="">-- No Family Head Selected --</option>
                             </select>
+                            
+                            <!-- Auto-apply Address Checkbox -->
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; margin-top: 2px; color: var(--slate-600); font-weight: 500;">
+                                <input type="checkbox" id="autoApplyAddress" style="width: 14px; height: 14px; cursor: pointer;" checked>
+                                <label for="autoApplyAddress" style="cursor: pointer; font-weight: 500;" data-i18n="label_auto_address">Auto-copy Family Head's address</label>
+                            </div>
                         </div>
 
                         <div class="input-group">
@@ -893,7 +911,7 @@
                     <div class="btn-group">
                         <button id="syncToCloudBtn" class="btn btn-primary btn-sm" data-i18n="btn_sync"><i class="fas fa-cloud-upload-alt"></i> Sync to Cloud</button>
                         <button id="restoreFromCloudBtn" class="btn btn-outline btn-sm" data-i18n="btn_restore"><i class="fas fa-cloud-download-alt"></i> Restore Cloud</button>
-                        <button id="exportLocalBtn" class="btn btn-outline btn-sm" data-i18n="btn_export"><i class="fas fa-download"></i> Export Backup</button>
+                        <button id="exportLocalBtn" class="btn btn-outline btn-sm" data-i18n="btn_export"><i class="fas fa-file-excel"></i> Export Excel</button>
                         <button id="settingsBtn" class="btn btn-outline btn-sm" data-i18n="btn_settings"><i class="fas fa-cog"></i> Settings</button>
                         <button id="clearAllBtn" class="btn btn-danger btn-sm" data-i18n="btn_clear_all"><i class="fas fa-trash"></i> Clear All</button>
                     </div>
@@ -1089,7 +1107,7 @@
                 table_title: "Census Records List",
                 btn_sync: "<i class=\"fas fa-cloud-upload-alt\"></i> Sync to Cloud",
                 btn_restore: "<i class=\"fas fa-cloud-download-alt\"></i> Restore Cloud",
-                btn_export: "<i class=\"fas fa-download\"></i> Export Backup",
+                btn_export: "<i class=\"fas fa-file-excel\"></i> Export Excel",
                 btn_settings: "<i class=\"fas fa-cog\"></i> Settings",
                 btn_clear_all: "<i class=\"fas fa-trash\"></i> Clear All",
                 placeholder_search: "Search name, phone, MyKad, address...",
@@ -1108,6 +1126,8 @@
                 opt_family_head: "Family Head / Master",
                 opt_family_member: "Family Member",
                 label_family_head: "<i class=\"fas fa-user-tie\"></i> Select Family Head *",
+                placeholder_search_head: "Search Family Head by name or NRIC...",
+                label_auto_address: "Auto-copy Family Head's address",
                 label_donation_status: "Donation Status",
                 opt_unclaimed: "Unclaimed",
                 opt_claimed: "Claimed",
@@ -1131,7 +1151,7 @@
                 toast_settings_saved: "Sync preferences updated successfully.",
                 toast_sync_success: "Census database successfully pushed to cloud!",
                 toast_restore_success: "Successfully loaded profiles from cloud!",
-                toast_backup_exported: "Census JSON file successfully built and downloaded.",
+                toast_backup_exported: "Census Excel sheet successfully generated and downloaded.",
                 toast_db_cleared: "Wiped all local records completely."
             },
             ms: {
@@ -1162,7 +1182,7 @@
                 table_title: "Senarai Rekod Banci",
                 btn_sync: "<i class=\"fas fa-cloud-upload-alt\"></i> Sync ke Awan",
                 btn_restore: "<i class=\"fas fa-cloud-download-alt\"></i> Pulih dari Awan",
-                btn_export: "<i class=\"fas fa-download\"></i> Eksport Sandaran",
+                btn_export: "<i class=\"fas fa-file-excel\"></i> Eksport Excel",
                 btn_settings: "<i class=\"fas fa-cog\"></i> Tetapan",
                 btn_clear_all: "<i class=\"fas fa-trash\"></i> Padam Semua",
                 placeholder_search: "Cari nama, telefon, MyKad, alamat...",
@@ -1181,6 +1201,8 @@
                 opt_family_head: "Ketua Keluarga / Master",
                 opt_family_member: "Ahli Keluarga",
                 label_family_head: "<i class=\"fas fa-user-tie\"></i> Pilih Ketua Keluarga *",
+                placeholder_search_head: "Cari Ketua Keluarga melalui nama/NRIC...",
+                label_auto_address: "Salin alamat Ketua Keluarga secara automatik",
                 label_donation_status: "Status Sumbangan",
                 opt_unclaimed: "Belum Dituntut",
                 opt_claimed: "Telah Dituntut",
@@ -1204,7 +1226,7 @@
                 toast_settings_saved: "Tetapan enjin penyelarasan berjaya dikemas kini.",
                 toast_sync_success: "Pangkalan data banci berjaya dihantar ke awan!",
                 toast_restore_success: "Berjaya memulihkan data dari awan!",
-                toast_backup_exported: "Fail JSON sandaran banci berjaya dimuat turun.",
+                toast_backup_exported: "Fail Excel sandaran banci berjaya dimuat turun.",
                 toast_db_cleared: "Semua rekod tempatan telah dipadam sepenuhnya."
             },
             zh: {
@@ -1235,7 +1257,7 @@
                 table_title: "普查人口记录列表",
                 btn_sync: "<i class=\"fas fa-cloud-upload-alt\"></i> 同步至云端",
                 btn_restore: "<i class=\"fas fa-cloud-download-alt\"></i> 从云端恢复",
-                btn_export: "<i class=\"fas fa-download\"></i> 导出本地备份",
+                btn_export: "<i class=\"fas fa-file-excel\"></i> 导出 Excel",
                 btn_settings: "<i class=\"fas fa-cog\"></i> 系统设置",
                 btn_clear_all: "<i class=\"fas fa-trash\"></i> 清空全部",
                 placeholder_search: "搜索姓名、电话、身份证、地址...",
@@ -1254,6 +1276,8 @@
                 opt_family_head: "户主 (家庭代表)",
                 opt_family_member: "家庭成员",
                 label_family_head: "<i class=\"fas fa-user-tie\"></i> 选择所属户主 *",
+                placeholder_search_head: "通过姓名或身份证搜索户主...",
+                label_auto_address: "自动复制户主地址",
                 label_donation_status: "物资领取状态",
                 opt_unclaimed: "尚未领取",
                 opt_claimed: "已领取",
@@ -1277,7 +1301,7 @@
                 toast_settings_saved: "云端同步配置已成功更新并保存。",
                 toast_sync_success: "普查数据库已成功同步至云端！",
                 toast_restore_success: "已成功从云端恢复并覆盖本地数据库！",
-                toast_backup_exported: "普查备份 JSON 文件已成功生成并下载。",
+                toast_backup_exported: "普查 Excel 表格已成功生成并下载。",
                 toast_db_cleared: "本地所有登记记录已被彻底清空。"
             }
         };
@@ -1717,14 +1741,26 @@
             updateSyncStatusUI();
         }
 
-        // Populates the "Select Family Head" dropdown with all registered heads
-        function updateFamilyHeadDropdown() {
+        // Populates the "Select Family Head" dropdown with all registered heads (supports fuzzy search queries and auto-selection)
+        function updateFamilyHeadDropdown(filterQuery = "") {
             const selectEl = document.getElementById("familyHeadId");
+            const feedbackEl = document.getElementById("headSearchCount");
             const savedVal = selectEl.value;
-            selectEl.innerHTML = `<option value="">-- ${localStorage.getItem('app_language') === 'zh' ? '请选择户主' : (localStorage.getItem('app_language') === 'ms' ? 'Pilih Ketua Keluarga' : 'Select Family Head')} --</option>`;
+            const lang = localStorage.getItem('app_language') || 'en';
+            
+            selectEl.innerHTML = `<option value="">-- ${lang === 'zh' ? '请选择户主' : (lang === 'ms' ? 'Pilih Ketua Keluarga' : 'Select Family Head')} --</option>`;
             
             // Filter all residents who are registered as 'head'
-            const heads = residents.filter(r => r.familyRole === 'head' && r.id !== editId);
+            let heads = residents.filter(r => r.familyRole === 'head' && r.id !== editId);
+            
+            // If a search query is typed in the magnifier bar
+            const query = filterQuery.trim().toLowerCase();
+            if (query) {
+                heads = heads.filter(h => 
+                    h.name.toLowerCase().includes(query) || 
+                    h.idNumber.replace(/\D/g, '').includes(query)
+                );
+            }
             
             heads.forEach(h => {
                 const opt = document.createElement("option");
@@ -1733,6 +1769,53 @@
                 if (h.id === savedVal) opt.selected = true;
                 selectEl.appendChild(opt);
             });
+
+            // Update dynamic count feedback and handle auto-selection
+            if (feedbackEl) {
+                if (query) {
+                    feedbackEl.style.display = "inline";
+                    if (heads.length === 0) {
+                        feedbackEl.textContent = lang === 'zh' ? "未找到匹配户主" : (lang === 'ms' ? "Tiada padanan" : "No matches");
+                        feedbackEl.style.color = "var(--danger)";
+                    } else if (heads.length === 1) {
+                        feedbackEl.textContent = lang === 'zh' ? "已自动选定唯一匹配" : (lang === 'ms' ? "Satu padanan dipilih" : "1 match selected");
+                        feedbackEl.style.color = "var(--success)";
+                        
+                        // Auto-select this single match in dropdown
+                        selectEl.value = heads[0].id;
+                        
+                        // Auto-trigger copy address if checkbox is active
+                        const autoApply = document.getElementById("autoApplyAddress").checked;
+                        if (autoApply && heads[0].address) {
+                            const addrInput = document.getElementById("address");
+                            if (addrInput.value !== heads[0].address) {
+                                addrInput.value = heads[0].address;
+                                showToast(
+                                    t("label_address"),
+                                    lang === 'zh' 
+                                        ? `已自动复制户主 [${heads[0].name}] 的地址！`
+                                        : (lang === 'ms' 
+                                           ? `Alamat Ketua Keluarga [${heads[0].name}] disalin secara automatik!` 
+                                           : `Copied address from Family Head [${heads[0].name}]!`),
+                                    "info"
+                                );
+                            }
+                        }
+                    } else {
+                        feedbackEl.textContent = lang === 'zh' ? `找到 ${heads.length} 个匹配` : (lang === 'ms' ? `${heads.length} padanan` : `${heads.length} matches`);
+                        feedbackEl.style.color = "var(--primary)";
+                        
+                        // If previously selected value is no longer inside the filtered subset, clear selection
+                        const stillValid = heads.some(h => h.id === savedVal);
+                        if (!stillValid) {
+                            selectEl.value = "";
+                        }
+                    }
+                } else {
+                    feedbackEl.style.display = "none";
+                    feedbackEl.textContent = "";
+                }
+            }
         }
 
         // Add or Edit Census Profile
@@ -1807,6 +1890,7 @@
             
             // Reset family roles fields
             document.getElementById("familyRole").value = "head";
+            document.getElementById("familyHeadSearch").value = "";
             document.getElementById("familyHeadId").value = "";
             document.getElementById("familyHeadGroup").style.display = "none";
             
@@ -1925,7 +2009,7 @@
                     const localState = translateState(parsed.state);
                     const localGender = translateGender(parsed.gender);
                     const ageText = lang === 'zh' ? `${parsed.age} 岁` : (lang === 'ms' ? `${parsed.age} tahun` : `${parsed.age} yrs`);
-                    infoText = `<i class="fas fa-map-marker-alt"></i> ${localState} · <i class="fas fa-venus-mars"></i> ${localGender} · <i class="fas fa-birthday-cake"></i> ${ageText}`;
+                    infoText = `<span style="display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; white-space: nowrap;"><i class="fas fa-map-marker-alt" style="color: var(--slate-400);"></i> ${localState}</span><span style="color: var(--slate-300); margin-right: 8px; font-weight: normal;">•</span><span style="display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; white-space: nowrap;"><i class="fas fa-venus-mars" style="color: var(--slate-400);"></i> ${localGender}</span><span style="color: var(--slate-300); margin-right: 8px; font-weight: normal;">•</span><span style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"><i class="fas fa-birthday-cake" style="color: var(--slate-400);"></i> ${ageText}</span>`;
                 }
                 
                 // Household & Family Badges
@@ -1969,7 +2053,7 @@
                         </td>
                         <td>
                             <div style="font-family: monospace; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.3px; color: var(--slate-800);">${escapeHtml(rec.idNumber)}</div>
-                            <div style="font-size: 0.72rem; color: var(--slate-400); margin-top: 3px; font-weight: 600; display: flex; gap: 8px; align-items: center;">${infoText}</div>
+                            <div style="font-size: 0.72rem; color: var(--slate-500); margin-top: 5px; font-weight: 600; display: block; line-height: 1.4;">${infoText}</div>
                         </td>
                         <td>
                             <span class="address-cell" title="${escapeHtml(rec.address || '')}">${escapeHtml(rec.address || '—')}</span>
@@ -2454,21 +2538,65 @@
             }
         });
 
-        // ----------------------------- Local JSON File Backups -----------------------------
-        function exportToFile() {
+        // ----------------------------- SheetJS Genuine Excel (.xlsx) Export Engine -----------------------------
+        function exportToExcel() {
+            if (!residents.length) {
+                const lang = localStorage.getItem('app_language') || 'en';
+                const emptyMsg = lang === 'zh' ? "普查数据库中暂无记录，无法导出！" : (lang === 'ms' ? "Tiada rekod untuk dieksport!" : "No records registered to export!");
+                alert(emptyMsg);
+                return;
+            }
+
             try {
-                const dataStr = JSON.stringify(residents, null, 2);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `malaysia_census_backup_${new Date().toISOString().slice(0, 10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                // Compile residents data with beautiful trilingual column headers
+                const data = residents.map(r => {
+                    const parsed = parseIdCard(r.idNumber);
+                    const headObj = r.familyHeadId ? residents.find(h => h.id === r.familyHeadId) : null;
+                    
+                    let roleStr = "Single Household / Isi Rumah Tunggal";
+                    if (r.familyRole === 'head') roleStr = "Family Head / Master / 户主";
+                    else if (r.familyRole === 'member') roleStr = "Family Member / Ahli Keluarga / 家庭成员";
+
+                    return {
+                        'Full Name / Nama Penuh / 姓名': r.name,
+                        'Phone / Telefon / 电话': r.phone || '—',
+                        'MyKad NRIC / 身份证': r.idNumber,
+                        'Gender / Jantina / 性别': parsed ? (parsed.gender === 'Male' ? 'Male / Lelaki / 男' : 'Female / Perempuan / 女') : '—',
+                        'Age / Umur / 年龄': parsed ? parsed.age : '—',
+                        'Birthdate / Tarikh Lahir / 出生日期': parsed ? parsed.birthStr : '—',
+                        'State of Birth / Negeri Kelahiran / 出生州属': parsed ? parsed.state : '—',
+                        'Household Role / Peranan / 户口角色': roleStr,
+                        'Family Head Name / Ketua Keluarga / 所属户主': headObj ? headObj.name : '—',
+                        'Address / Alamat / 住宅地址': r.address || '—',
+                        'Aid Status / Status Bantuan / 领取状态': r.donationClaimed ? 'Claimed / Telah Dituntut / 已领取' : 'Unclaimed / Belum Dituntut / 尚未领取',
+                        'Aid Item / Barang Sumbangan / 物资名称': r.donationItem || '—',
+                        'Claim Date / Masa Tuntutan / 领取时间': r.donationTime ? new Date(r.donationTime).toLocaleString() : '—'
+                    };
+                });
+                
+                // Create excel sheet structure
+                const worksheet = XLSX.utils.json_to_sheet(data);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Census Records");
+                
+                // Dynamically fix column widths so the sheet looks premium
+                const cols = Object.keys(data[0] || {}).map(k => {
+                    let maxLen = k.length;
+                    data.forEach(r => {
+                        const val = String(r[k] || '');
+                        if (val.length > maxLen) maxLen = val.length;
+                    });
+                    // Cap at 45 to prevent single massive address cells
+                    return { wch: Math.min(Math.max(maxLen + 3, 12), 45) };
+                });
+                worksheet["!cols"] = cols;
+                
+                // Download file
+                const dateStr = new Date().toISOString().slice(0, 10);
+                XLSX.writeFile(workbook, `malaysia_census_data_${dateStr}.xlsx`);
                 showToast(t("btn_export"), t("toast_backup_exported"), "success");
             } catch (err) {
+                console.error("Excel export error:", err);
                 showToast(t("btn_export"), t("toast_save_error"), "danger");
             }
         }
@@ -2495,9 +2623,50 @@
             const group = document.getElementById("familyHeadGroup");
             if (e.target.value === 'member') {
                 group.style.display = "flex";
+                document.getElementById("familyHeadSearch").value = "";
                 updateFamilyHeadDropdown();
             } else {
                 group.style.display = "none";
+            }
+        });
+
+        // Search filter for Family Head dropdown
+        document.getElementById("familyHeadSearch").addEventListener("input", (e) => {
+            updateFamilyHeadDropdown(e.target.value);
+        });
+
+        // Copy Family Head's address automatically
+        document.getElementById("familyHeadId").addEventListener("change", (e) => {
+            const headId = e.target.value;
+            const autoApply = document.getElementById("autoApplyAddress").checked;
+            
+            if (headId && autoApply) {
+                const headObj = residents.find(r => r.id === headId);
+                if (headObj && headObj.address) {
+                    document.getElementById("address").value = headObj.address;
+                    showToast(
+                        t("label_address"),
+                        localStorage.getItem('app_language') === 'zh' 
+                            ? `已自动复制户主 [${headObj.name}] 的地址！`
+                            : (localStorage.getItem('app_language') === 'ms' 
+                               ? `Alamat Ketua Keluarga [${headObj.name}] disalin secara automatik!` 
+                               : `Copied address from Family Head [${headObj.name}]!`),
+                        "info"
+                    );
+                }
+            }
+        });
+
+        // Auto apply address checkbox trigger
+        document.getElementById("autoApplyAddress").addEventListener("change", (e) => {
+            if (e.target.checked) {
+                const headId = document.getElementById("familyHeadId").value;
+                if (headId) {
+                    const headObj = residents.find(r => r.id === headId);
+                    if (headObj && headObj.address) {
+                        document.getElementById("address").value = headObj.address;
+                    }
+                }
             }
         });
 
@@ -2631,7 +2800,7 @@
         // 7. Action Hooks
         document.getElementById("cancelEditBtn").addEventListener("click", clearForm);
         document.getElementById("syncToCloudBtn").addEventListener("click", syncToCloud);
-        document.getElementById("exportLocalBtn").addEventListener("click", exportToFile);
+        document.getElementById("exportLocalBtn").addEventListener("click", exportToExcel); // Hooked to Genuine SheetJS Excel Exporter
         document.getElementById("clearAllBtn").addEventListener("click", clearAllData);
 
         // 8. System self-check and boot
