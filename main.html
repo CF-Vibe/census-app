@@ -758,13 +758,14 @@
             <!-- Elegant Trilingual Language Switcher & Campaign Controls Badge -->
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <!-- Campaign Controls -->
-                <div style="display: flex; align-items: center; gap: 8px; background: var(--slate-100); padding: 4px 8px; border-radius: 40px; border: 1px solid var(--slate-200);">
-                    <i class="fas fa-gift" style="color: var(--primary); margin-left: 6px; font-size: 0.85rem;"></i>
-                    <select id="campaignSelect" style="height: 32px; border-radius: 20px; font-size: 0.8rem; border: none; padding: 0 10px 0 6px; background: transparent; font-weight: 600; cursor: pointer; outline: none;">
+                <div style="display: flex; align-items: center; gap: 8px; background: var(--slate-100); padding: 4px 6px; border-radius: 30px; border: 1px solid var(--slate-200); flex-wrap: nowrap; flex-shrink: 0;">
+                    <i class="fas fa-gift" style="color: var(--primary); margin-left: 8px; font-size: 0.85rem;"></i>
+                    <select id="campaignSelect" style="height: 32px; border-radius: 20px; font-size: 0.8rem; border: none; padding: 0 8px 0 4px; background: transparent; font-weight: 600; cursor: pointer; outline: none;">
                         <!-- options will be populated dynamically -->
                     </select>
-                    <button id="newCampaignBtn" class="btn btn-primary btn-sm" style="height: 32px; padding: 0 14px; font-size: 0.75rem; border-radius: 20px;" data-i18n="btn_new_campaign">New Campaign</button>
-                    <button id="deleteCampaignBtn" class="btn btn-danger btn-sm" style="height: 32px; padding: 0 14px; font-size: 0.75rem; border-radius: 20px;" data-i18n="btn_delete_campaign">Delete Campaign</button>
+                    <button id="manageCampaignItemsBtn" class="btn btn-sm" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; border: 1px solid var(--slate-300); color: var(--slate-700); font-weight: 600; font-size: 0.8rem;" data-i18n-title="btn_manage_items"><i class="fas fa-edit"></i></button>
+                    <button id="newCampaignBtn" class="btn btn-primary btn-sm" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;" data-i18n-title="btn_new_campaign"><i class="fas fa-plus"></i></button>
+                    <button id="deleteCampaignBtn" class="btn btn-danger btn-sm" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;" data-i18n-title="btn_delete_campaign"><i class="fas fa-trash-alt"></i></button>
                 </div>
                 <div class="language-switcher" style="display: flex; background: var(--slate-100); padding: 4px; border-radius: 40px; border: 1px solid var(--slate-200);">
                     <button onclick="changeLanguage('en')" id="lang-btn-en" class="lang-btn active">English</button>
@@ -1031,17 +1032,8 @@
                     <!-- Predefined Campaign Items (Click to Toggle Claim) -->
                     <div style="grid-column: span 2; display: flex; flex-direction: column;">
                         <label style="font-weight: 700; margin-bottom: 8px;" data-i18n="label_select_items"><i class="fas fa-tasks"></i> Select Items to Claim</label>
-                        <div id="dmCampaignItemsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; background: var(--slate-50); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--slate-200);">
+                        <div id="dmCampaignItemsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; background: var(--slate-50); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--slate-200);">
                             <!-- Dynamic items check list -->
-                        </div>
-                    </div>
-
-                    <!-- Add New Item Definition to Campaign -->
-                    <div class="input-group" style="grid-column: span 2;">
-                        <label style="font-weight: 700;" data-i18n="label_add_item_type"><i class="fas fa-plus-circle"></i> Add New Item Type to Campaign</label>
-                        <div style="display: flex; gap: 8px; width: 100%;">
-                            <input type="text" id="dmNewCampaignItemInput" placeholder="e.g. Rice Pack 5kg, Cooking Oil" style="flex: 1; height: 38px; padding: 0 12px; border-radius: var(--radius-sm); border: 1px solid var(--slate-200); font-weight: 600;" data-i18n-placeholder="placeholder_donation_item">
-                            <button type="button" class="btn btn-primary" id="dmAddCampaignItemBtn" style="height: 38px; padding: 0 16px; margin: 0; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-plus"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1049,6 +1041,75 @@
             <div class="modal-footer">
                 <button class="btn btn-outline btn-sm" id="cancelDonationModalBtn" data-i18n="btn_cancel">Cancel</button>
                 <button class="btn btn-primary btn-sm" id="saveDonationClaimBtn"><i class="fas fa-check"></i> <span data-i18n="btn_add_record">Save</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Campaign Modal -->
+    <div id="createCampaignModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-bullhorn" style="color: var(--primary);"></i> <span data-i18n="cc_modal_title">Create New Campaign</span></h3>
+                <button class="modal-close-btn" id="closeCreateCampaignModalBtn">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="input-group">
+                    <label style="font-weight: 700;" data-i18n="cc_label_name"><i class="fas fa-tag"></i> Campaign Name *</label>
+                    <input type="text" id="ccCampaignNameInput" placeholder="e.g. CNY 2026 Distribution" data-i18n-placeholder="cc_placeholder_name">
+                </div>
+                
+                <div class="input-group">
+                    <label style="font-weight: 700;" data-i18n="cc_label_items"><i class="fas fa-boxes"></i> Campaign Items List</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="ccNewItemInput" placeholder="e.g. Rice Pack 5kg, Cooking Oil" data-i18n-placeholder="cc_placeholder_items">
+                        <button type="button" class="btn btn-primary" id="ccAddItemBtn" style="height: 38px; padding: 0 16px; margin: 0; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="cc_label_added_items"><i class="fas fa-list-ul"></i> Added Items:</label>
+                    <div id="ccItemsList" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 50px; padding: 10px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-sm);">
+                        <!-- Dynamic item tags with (x) buttons -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline btn-sm" id="cancelCreateCampaignModalBtn" data-i18n="btn_cancel">Cancel</button>
+                <button class="btn btn-primary btn-sm" id="confirmCreateCampaignBtn"><i class="fas fa-check"></i> <span data-i18n="cc_btn_create">Create Campaign</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Campaign Items Modal -->
+    <div id="manageCampaignItemsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit" style="color: var(--primary);"></i> <span data-i18n="mc_modal_title">Edit Campaign Items</span></h3>
+                <button class="modal-close-btn" id="closeManageCampaignItemsModalBtn">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="input-group">
+                    <label style="font-weight: 700;" data-i18n="label_active_campaign"><i class="fas fa-bullhorn"></i> Active Campaign</label>
+                    <input type="text" id="mcCampaignNameDisplay" readonly style="background: var(--slate-50); font-weight: 700; color: var(--slate-700); cursor: not-allowed; border: 1px solid var(--slate-200);">
+                </div>
+                
+                <div class="input-group">
+                    <label style="font-weight: 700;" data-i18n="cc_label_items"><i class="fas fa-boxes"></i> Campaign Items List</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="mcNewItemInput" placeholder="e.g. Rice Pack 5kg, Cooking Oil" data-i18n-placeholder="cc_placeholder_items">
+                        <button type="button" class="btn btn-primary" id="mcAddItemBtn" style="height: 38px; padding: 0 16px; margin: 0; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label style="font-weight: 700; margin-bottom: 6px; display: block;" data-i18n="cc_label_added_items"><i class="fas fa-list-ul"></i> Added Items:</label>
+                    <div id="mcItemsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding: 10px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-sm);">
+                        <!-- Dynamic items with delete buttons -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 0 0 0;">
+                <button class="btn btn-primary btn-sm" id="closeManageCampaignItemsBtn" style="width: 100%;"><i class="fas fa-check"></i> <span data-i18n="btn_save">Done</span></button>
             </div>
         </div>
     </div>
@@ -1134,8 +1195,11 @@
                 th_actions: "Actions",
                 footer_text: "Trilingual Edition (English / Bahasa Melayu / 中文) · MyKad NRIC automatic place-of-birth & gender extraction system.",
                 status_cloud_key: "Cloud Key:",
-                btn_new_campaign: "New Campaign",
-                btn_delete_campaign: "Delete Campaign",
+                btn_new_campaign: "<i class=\"fas fa-plus\"></i> New Campaign",
+                btn_delete_campaign: "<i class=\"fas fa-trash-alt\"></i> Delete Campaign",
+                btn_manage_items: "<i class=\"fas fa-edit\"></i> Edit Items",
+                mc_modal_title: "Edit Campaign Items",
+                label_active_campaign: "Active Campaign",
                 
                 // Household & Donation Translation Strings
                 label_family_role: "<i class=\"fas fa-users\"></i> Household Role *",
@@ -1150,8 +1214,13 @@
                 label_donation_item: "<i class=\"fas fa-box-open\"></i> Donation Item Name",
                 placeholder_donation_item: "e.g. Food Pack, Financial Aid",
                 label_select_items: "<i class=\"fas fa-tasks\"></i> Select Items to Claim",
-                label_add_item_type: "<i class=\"fas fa-plus-circle\"></i> Add New Item Type to Campaign",
-                placeholder_donation_item: "e.g. Food Pack, Financial Aid",
+                cc_modal_title: "Create New Campaign",
+                cc_label_name: "Campaign Name *",
+                cc_label_items: "Campaign Items List",
+                cc_placeholder_name: "e.g. CNY 2026 Distribution",
+                cc_placeholder_items: "e.g. Rice Pack 5kg, Cooking Oil",
+                cc_label_added_items: "Added Items:",
+                cc_btn_create: "Create Campaign",
                 stat_total_households: "Total Households",
                 stat_total_households_desc: "Unique families / family heads",
                 stat_donations_delivered: "Aids Distributed",
@@ -1214,8 +1283,11 @@
                 th_actions: "Tindakan",
                 footer_text: "Edisi Trikolour (Inggeris / Bahasa Melayu / 中文) · Sistem pengekstrakan automatik tempat kelahiran & jantina MyKad NRIC.",
                 status_cloud_key: "Kunci Awan:",
-                btn_new_campaign: "Kempen Baru",
-                btn_delete_campaign: "Padam Kempen",
+                btn_new_campaign: "<i class=\"fas fa-plus\"></i> Kempen Baru",
+                btn_delete_campaign: "<i class=\"fas fa-trash-alt\"></i> Padam Kempen",
+                btn_manage_items: "<i class=\"fas fa-edit\"></i> Edit Barang",
+                mc_modal_title: "Edit Barang Kempen",
+                label_active_campaign: "Kempen Aktif",
                 
                 // Household & Donation
                 label_family_role: "<i class=\"fas fa-users\"></i> Peranan Isi Rumah *",
@@ -1230,8 +1302,13 @@
                 label_donation_item: "<i class=\"fas fa-box-open\"></i> Nama Barang Sumbangan",
                 placeholder_donation_item: "cth. Pek Makanan, Bantuan Wang",
                 label_select_items: "<i class=\"fas fa-tasks\"></i> Pilih Barang untuk Dituntut",
-                label_add_item_type: "<i class=\"fas fa-plus-circle\"></i> Tambah Jenis Barang ke Kempen",
-                placeholder_donation_item: "cth. Pek Makanan, Bantuan Wang",
+                cc_modal_title: "Cipta Kempen Baru",
+                cc_label_name: "Nama Kempen *",
+                cc_label_items: "Senarai Barang Kempen",
+                cc_placeholder_name: "cth. Pengedaran CNY 2026",
+                cc_placeholder_items: "cth. Pek Beras 5kg, Minyak Masak",
+                cc_label_added_items: "Barang Ditambah:",
+                cc_btn_create: "Cipta Kempen",
                 stat_total_households: "Jumlah Isi Rumah",
                 stat_total_households_desc: "Keluarga unik / ketua keluarga",
                 stat_donations_delivered: "Bantuan Diedarkan",
@@ -1294,8 +1371,11 @@
                 th_actions: "操作",
                 footer_text: "三语版本 (英文 / 马来文 / 中文) · MyKad 身份证出生地与性别智能自动提取系统。",
                 status_cloud_key: "云端密钥:",
-                btn_new_campaign: "新活动",
-                btn_delete_campaign: "删除活动",
+                btn_new_campaign: "<i class=\"fas fa-plus\"></i> 新活动",
+                btn_delete_campaign: "<i class=\"fas fa-trash-alt\"></i> 删除活动",
+                btn_manage_items: "<i class=\"fas fa-edit\"></i> 管理物资",
+                mc_modal_title: "管理活动物资",
+                label_active_campaign: "当前活动",
                 
                 // Household & Donation
                 label_family_role: "<i class=\"fas fa-users\"></i> 家庭户口角色 *",
@@ -1310,8 +1390,13 @@
                 label_donation_item: "<i class=\"fas fa-box-open\"></i> 援助物资名称",
                 placeholder_donation_item: "例如: 粮食包、援助金、生活物资",
                 label_select_items: "<i class=\"fas fa-tasks\"></i> 选择要领取的物资",
-                label_add_item_type: "<i class=\"fas fa-plus-circle\"></i> 添加新物品类型到当前活动",
-                placeholder_donation_item: "例如: 粮食包、援助金、生活物资",
+                cc_modal_title: "创建新活动",
+                cc_label_name: "活动名称 *",
+                cc_label_items: "活动物资清单",
+                cc_placeholder_name: "例如: 2026年农历新年物资派发",
+                cc_placeholder_items: "例如: 5公斤大米、食用油",
+                cc_label_added_items: "已添加的物资：",
+                cc_btn_create: "创建活动",
                 stat_total_households: "总普查户数",
                 stat_total_households_desc: "系统中登记的独立家庭总数",
                 stat_donations_delivered: "已发放物资笔数",
@@ -1568,6 +1653,17 @@
                 const key = el.getAttribute('data-i18n');
                 if (LANGUAGES[lang] && LANGUAGES[lang][key]) {
                     el.innerHTML = LANGUAGES[lang][key];
+                }
+            });
+            
+            // Translate tooltips/titles with [data-i18n-title]
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (LANGUAGES[lang] && LANGUAGES[lang][key]) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = LANGUAGES[lang][key];
+                    const plainText = tempDiv.textContent || tempDiv.innerText || "";
+                    el.setAttribute('title', plainText.trim());
                 }
             });
             
@@ -2453,32 +2549,66 @@
                 return;
             }
             
+            const resident = residents.find(r => r.id === activeDonationResidentId);
+            const lang = localStorage.getItem('app_language') || 'en';
+
             campaignItems.forEach((itemName) => {
-                const isClaimed = modalClaimedItems.some(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase());
+                const isClaimedBySelf = modalClaimedItems.some(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase());
+                
+                let doubleClaimInfo = null;
+                if (resident) {
+                    doubleClaimInfo = checkDoubleClaimForItem(resident.id, resident.familyRole, resident.familyHeadId, itemName);
+                }
+                const isClaimedByFamily = !!doubleClaimInfo;
                 
                 const row = document.createElement("label");
                 row.style.display = "flex";
                 row.style.alignItems = "center";
                 row.style.justifyContent = "space-between";
-                row.style.background = isClaimed ? "#f0fdf4" : "#fff";
                 row.style.padding = "10px 14px";
                 row.style.borderRadius = "8px";
-                row.style.border = isClaimed ? "1.5px solid #b7ebc6" : "1px solid var(--slate-200)";
                 row.style.cursor = "pointer";
                 row.style.transition = "var(--transition)";
                 
-                const claimRecord = modalClaimedItems.find(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase());
-                const dateStr = claimRecord && claimRecord.time ? new Date(claimRecord.time).toLocaleDateString() : "";
+                if (isClaimedBySelf) {
+                    row.style.background = "#f0fdf4";
+                    row.style.border = "1.5px solid #b7ebc6";
+                } else if (isClaimedByFamily) {
+                    row.style.background = "#f8fafc";
+                    row.style.border = "1px dashed #cbd5e1";
+                    row.style.opacity = "0.75";
+                } else {
+                    row.style.background = "#fff";
+                    row.style.border = "1px solid var(--slate-200)";
+                }
+                
+                const selfRecord = modalClaimedItems.find(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase());
+                const selfDateStr = selfRecord && selfRecord.time ? new Date(selfRecord.time).toLocaleString() : "";
+                
+                let subtextHtml = "";
+                if (isClaimedBySelf) {
+                    const claimedBySelfText = lang === 'zh' ? `由本人于 ${selfDateStr} 领取` : 
+                        (lang === 'ms' ? `Dituntut oleh sendiri pada ${selfDateStr}` : 
+                        `Claimed by self on ${selfDateStr}`);
+                    subtextHtml = `<span style="font-size: 0.7rem; color: #16a34a; font-weight: 600;">${claimedBySelfText}</span>`;
+                } else if (isClaimedByFamily) {
+                    const otherDateStr = new Date(doubleClaimInfo.time).toLocaleString();
+                    const claimantName = doubleClaimInfo.claimant.name;
+                    
+                    const claimedByFamilyText = lang === 'zh' ? `同户家庭成员 ${claimantName} 已于 ${otherDateStr} 领取` : 
+                        (lang === 'ms' ? `Ahli serumah ${claimantName} telah menuntut pada ${otherDateStr}` : 
+                        `Household member ${claimantName} claimed on ${otherDateStr}`);
+                    subtextHtml = `<span style="font-size: 0.7rem; color: #b45309; font-weight: 600;"><i class="fas fa-exclamation-triangle"></i> ${claimedByFamilyText}</span>`;
+                }
                 
                 row.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" ${isClaimed ? 'checked' : ''} onchange="toggleCampaignItemClaim('${escapeHtml(itemName)}', this.checked)">
+                        <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" ${isClaimedBySelf ? 'checked' : ''} onchange="toggleCampaignItemClaim('${escapeHtml(itemName)}', this.checked)">
                         <div style="display: flex; flex-direction: column;">
-                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--slate-800);">${escapeHtml(itemName)}</span>
-                            ${dateStr ? `<span style="font-size: 0.7rem; color: var(--slate-400);">${dateStr}</span>` : ''}
+                            <span style="font-weight: 700; font-size: 0.85rem; color: ${isClaimedByFamily && !isClaimedBySelf ? 'var(--slate-500)' : 'var(--slate-800)'};">${escapeHtml(itemName)}</span>
+                            ${subtextHtml}
                         </div>
                     </div>
-                    <i class="fas fa-trash-alt" style="color: var(--danger); cursor: pointer; padding: 4px;" onclick="event.preventDefault(); deleteCampaignItemType('${escapeHtml(itemName)}')"></i>
                 `;
                 listEl.appendChild(row);
             });
@@ -2489,8 +2619,9 @@
             if (!resident) return;
             
             if (isChecked) {
-                const claimant = checkDoubleClaimForItem(resident.id, resident.familyRole, resident.familyHeadId, itemName);
-                if (claimant) {
+                const claimantInfo = checkDoubleClaimForItem(resident.id, resident.familyRole, resident.familyHeadId, itemName);
+                if (claimantInfo) {
+                    const claimant = claimantInfo.claimant;
                     const lang = localStorage.getItem('app_language') || 'en';
                     const confirmMsg = lang === 'zh' ? `⚠️ 发现同户重复领取！同户成员 ${claimant.name} 已经领过 [${itemName}]。是否仍要重复发放？` :
                         (lang === 'ms' ? `⚠️ Tuntutan Berganda Dikesan! Ahli keluarga serumah ${claimant.name} telah menuntut [${itemName}]. Adakah anda mahu meneruskan?` :
@@ -2513,22 +2644,7 @@
             renderCampaignItemsSelectionList();
         };
 
-        window.deleteCampaignItemType = (itemName) => {
-            const lang = localStorage.getItem('app_language') || 'en';
-            const confirmMsg = lang === 'zh' ? `确定要从本活动中删除物品类型 [${itemName}] 吗？这不会自动删除已登记的个人领物记录，但该物品不再出现在可选列表中。` :
-                (lang === 'ms' ? `Adakah anda pasti mahu memadamkan jenis barangan [${itemName}] daripada kempen ini?` :
-                `Are you sure you want to delete the item type [${itemName}] from this campaign?`);
-            
-            if (confirm(confirmMsg)) {
-                const campaign = campaigns.find(c => c.id === activeCampaignId);
-                if (campaign) {
-                    campaign.items = (campaign.items || []).filter(it => it.trim().toLowerCase() !== itemName.trim().toLowerCase());
-                    localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
-                    modalClaimedItems = modalClaimedItems.filter(it => it.name.trim().toLowerCase() !== itemName.trim().toLowerCase());
-                    renderCampaignItemsSelectionList();
-                }
-            }
-        };
+        // Removed deleteCampaignItemType as campaign items are now managed during creation
 
         function getHouseholdClaimsInCurrentCampaign(residentId, familyRole, familyHeadId) {
             let householdIds = [];
@@ -2592,11 +2708,14 @@
                         if (entry.items && Array.isArray(entry.items)) {
                             items = entry.items;
                         } else if (entry.donationItem || entry.item) {
-                            items = [{ name: entry.donationItem || entry.item }];
+                            items = [{ name: entry.donationItem || entry.item, time: entry.donationTime || entry.time }];
                         }
                         const match = items.find(it => (it.name || it.donationItem || "").trim().toLowerCase() === normalizedNew);
                         if (match) {
-                            return r;
+                            return {
+                                claimant: r,
+                                time: match.time || match.donationTime || new Date().toISOString()
+                            };
                         }
                     }
                 }
@@ -2645,7 +2764,6 @@
             }
             
             renderCampaignItemsSelectionList();
-            document.getElementById("dmNewCampaignItemInput").value = "";
             
             // Anti-Double-Take Claim check
             const warningCard = document.getElementById("doubleClaimWarningCard");
@@ -2675,26 +2793,7 @@
         document.getElementById("closeDonationModalBtn").addEventListener("click", () => donationModal.style.display = "none");
         document.getElementById("cancelDonationModalBtn").addEventListener("click", () => donationModal.style.display = "none");
 
-        document.getElementById("dmAddCampaignItemBtn").addEventListener("click", () => {
-            const input = document.getElementById("dmNewCampaignItemInput");
-            const itemName = input.value.trim();
-            if (!itemName) return;
-            
-            const campaign = campaigns.find(c => c.id === activeCampaignId);
-            if (campaign) {
-                if (!campaign.items) campaign.items = [];
-                
-                // Avoid duplicates in campaign items
-                const exists = campaign.items.some(it => it.trim().toLowerCase() === itemName.toLowerCase());
-                if (!exists) {
-                    campaign.items.push(itemName);
-                    localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
-                }
-                
-                input.value = "";
-                renderCampaignItemsSelectionList();
-            }
-        });
+        // Removed dmAddCampaignItemBtn listener as campaign items are now managed during creation
 
         document.getElementById("saveDonationClaimBtn").addEventListener("click", async () => {
             const resident = residents.find(r => r.id === activeDonationResidentId);
@@ -3130,6 +3229,12 @@
             if (e.target === cloudModal) closeCloudModal();
             if (e.target === settingsModal) settingsModal.style.display = "none";
             if (e.target === donationModal) donationModal.style.display = "none";
+            if (e.target === document.getElementById("createCampaignModal")) {
+                document.getElementById("createCampaignModal").style.display = "none";
+            }
+            if (e.target === document.getElementById("manageCampaignItemsModal")) {
+                document.getElementById("manageCampaignItemsModal").style.display = "none";
+            }
         });
 
         // 7. Action Hooks
@@ -3146,29 +3251,203 @@
             applyFilters();
         });
 
-        document.getElementById("newCampaignBtn").addEventListener("click", () => {
-            const lang = localStorage.getItem('app_language') || 'en';
-            const promptText = lang === 'zh' ? '请输入新活动名称：' : (lang === 'ms' ? 'Masukkan nama kempen baru:' : 'Enter new campaign name:');
-            const name = prompt(promptText);
-            if (name && name.trim()) {
-                const newId = "c_" + Date.now();
-                campaigns.push({
-                    id: newId,
-                    name: name.trim(),
-                    createdAt: new Date().toISOString(),
-                    items: []
-                });
-                localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
-                activeCampaignId = newId;
-                localStorage.setItem('active_campaign_id', activeCampaignId);
-                
-                renderCampaignSelector();
-                updateDashboard();
-                applyFilters();
-                
-                const successMsg = lang === 'zh' ? `已成功创建并切换至新活动：${name}` : (lang === 'ms' ? `Berjaya mencipta dan beralih ke kempen baru: ${name}` : `Successfully created and switched to new campaign: ${name}`);
-                showToast(t("btn_new_campaign") || "New Campaign", successMsg, "success");
+        // ----------------------------- Create Campaign Modal Logic -----------------------------
+        let ccTempItems = [];
+
+        function renderCcTempItems() {
+            const listEl = document.getElementById("ccItemsList");
+            if (!listEl) return;
+            listEl.innerHTML = "";
+            
+            if (ccTempItems.length === 0) {
+                const lang = localStorage.getItem('app_language') || 'en';
+                const emptyText = lang === 'zh' ? '尚未添加物品。请在上方输入并点击“+”。' : (lang === 'ms' ? 'Tiada barang ditambah. Masukkan di atas dan klik "+".' : 'No items added yet. Enter above and click "+".');
+                listEl.innerHTML = `<span style="color: var(--slate-400); font-size: 0.8rem; font-style: italic;">${emptyText}</span>`;
+                return;
             }
+            
+            ccTempItems.forEach((item, idx) => {
+                const badge = document.createElement("div");
+                badge.style.display = "inline-flex";
+                badge.style.alignItems = "center";
+                badge.style.gap = "6px";
+                badge.style.background = "var(--primary-light)";
+                badge.style.color = "var(--primary)";
+                badge.style.padding = "4px 10px";
+                badge.style.borderRadius = "20px";
+                badge.style.fontSize = "0.78rem";
+                badge.style.fontWeight = "700";
+                
+                badge.innerHTML = `
+                    <span>${escapeHtml(item)}</span>
+                    <i class="fas fa-times" style="cursor: pointer; font-size: 0.75rem;" onclick="removeCcTempItem(${idx})"></i>
+                `;
+                listEl.appendChild(badge);
+            });
+        }
+
+        window.removeCcTempItem = (idx) => {
+            ccTempItems.splice(idx, 1);
+            renderCcTempItems();
+        };
+
+        document.getElementById("ccAddItemBtn").addEventListener("click", () => {
+            const input = document.getElementById("ccNewItemInput");
+            const val = input.value.trim();
+            if (val && !ccTempItems.some(it => it.toLowerCase() === val.toLowerCase())) {
+                ccTempItems.push(val);
+                input.value = "";
+                renderCcTempItems();
+            }
+        });
+
+        document.getElementById("ccNewItemInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                document.getElementById("ccAddItemBtn").click();
+            }
+        });
+
+        document.getElementById("closeCreateCampaignModalBtn").addEventListener("click", () => {
+            document.getElementById("createCampaignModal").style.display = "none";
+        });
+        document.getElementById("cancelCreateCampaignModalBtn").addEventListener("click", () => {
+            document.getElementById("createCampaignModal").style.display = "none";
+        });
+
+        document.getElementById("confirmCreateCampaignBtn").addEventListener("click", () => {
+            const nameInput = document.getElementById("ccCampaignNameInput");
+            const name = nameInput.value.trim();
+            const lang = localStorage.getItem('app_language') || 'en';
+            
+            if (!name) {
+                const warningMsg = lang === 'zh' ? "活动名称不能为空！" : (lang === 'ms' ? "Nama kempen tidak boleh kosong!" : "Campaign name cannot be empty!");
+                alert(warningMsg);
+                return;
+            }
+            
+            const newId = "c_" + Date.now();
+            campaigns.push({
+                id: newId,
+                name: name,
+                createdAt: new Date().toISOString(),
+                items: [...ccTempItems]
+            });
+            
+            localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+            activeCampaignId = newId;
+            localStorage.setItem('active_campaign_id', activeCampaignId);
+            
+            // Reset and close
+            nameInput.value = "";
+            ccTempItems = [];
+            document.getElementById("createCampaignModal").style.display = "none";
+            
+            renderCampaignSelector();
+            updateDashboard();
+            applyFilters();
+            
+            const successMsg = lang === 'zh' ? `已成功创建并切换至新活动：${name}` : (lang === 'ms' ? `Berjaya mencipta dan beralih ke kempen baru: ${name}` : `Successfully created and switched to new campaign: ${name}`);
+            showToast(t("btn_new_campaign") || "New Campaign", successMsg, "success");
+        });
+
+        document.getElementById("newCampaignBtn").addEventListener("click", () => {
+            ccTempItems = [];
+            document.getElementById("ccCampaignNameInput").value = "";
+            document.getElementById("ccNewItemInput").value = "";
+            renderCcTempItems();
+            document.getElementById("createCampaignModal").style.display = "flex";
+        });
+
+        // ----------------------------- Edit Existing Campaign Items Logic -----------------------------
+        function renderManageCampaignItemsList() {
+            const listEl = document.getElementById("mcItemsList");
+            if (!listEl) return;
+            listEl.innerHTML = "";
+            
+            const campaign = campaigns.find(c => c.id === activeCampaignId);
+            const campaignItems = campaign ? (campaign.items || []) : [];
+            
+            if (campaignItems.length === 0) {
+                const lang = localStorage.getItem('app_language') || 'en';
+                const emptyText = lang === 'zh' ? '当前活动暂无物品。请在上方输入并添加。' : (lang === 'ms' ? 'Tiada barang untuk kempen ini. Masukkan di atas dan tambah.' : 'No items for this campaign. Enter above and add.');
+                listEl.innerHTML = `<span style="color: var(--slate-400); font-size: 0.8rem; font-style: italic; text-align: center; padding: 10px 0;">${emptyText}</span>`;
+                return;
+            }
+            
+            campaignItems.forEach((itemName, idx) => {
+                const row = document.createElement("div");
+                row.style.display = "flex";
+                row.style.alignItems = "center";
+                row.style.justifyContent = "space-between";
+                row.style.padding = "8px 12px";
+                row.style.background = "#fff";
+                row.style.border = "1px solid var(--slate-200)";
+                row.style.borderRadius = "6px";
+                
+                row.innerHTML = `
+                    <span style="font-weight: 600; font-size: 0.82rem; color: var(--slate-800);">${escapeHtml(itemName)}</span>
+                    <i class="fas fa-trash-alt" style="color: var(--danger); cursor: pointer; padding: 4px;" onclick="deleteCampaignItemTypeFromEdit('${escapeHtml(itemName)}')"></i>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        window.deleteCampaignItemTypeFromEdit = (itemName) => {
+            const lang = localStorage.getItem('app_language') || 'en';
+            const confirmMsg = lang === 'zh' ? `确定要从当前活动中删除物品 [${itemName}] 吗？` :
+                (lang === 'ms' ? `Adakah anda pasti mahu memadamkan barangan [${itemName}] daripada kempen aktif?` :
+                `Are you sure you want to delete the item [${itemName}] from the active campaign?`);
+            
+            if (confirm(confirmMsg)) {
+                const campaign = campaigns.find(c => c.id === activeCampaignId);
+                if (campaign) {
+                    campaign.items = (campaign.items || []).filter(it => it.trim().toLowerCase() !== itemName.trim().toLowerCase());
+                    localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+                    renderManageCampaignItemsList();
+                }
+            }
+        };
+
+        document.getElementById("mcAddItemBtn").addEventListener("click", () => {
+            const input = document.getElementById("mcNewItemInput");
+            const val = input.value.trim();
+            if (!val) return;
+            
+            const campaign = campaigns.find(c => c.id === activeCampaignId);
+            if (campaign) {
+                if (!campaign.items) campaign.items = [];
+                if (!campaign.items.some(it => it.toLowerCase() === val.toLowerCase())) {
+                    campaign.items.push(val);
+                    localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+                }
+                input.value = "";
+                renderManageCampaignItemsList();
+            }
+        });
+
+        document.getElementById("mcNewItemInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                document.getElementById("mcAddItemBtn").click();
+            }
+        });
+
+        document.getElementById("manageCampaignItemsBtn").addEventListener("click", () => {
+            const campaign = campaigns.find(c => c.id === activeCampaignId);
+            if (campaign) {
+                document.getElementById("mcCampaignNameDisplay").value = campaign.name;
+                document.getElementById("mcNewItemInput").value = "";
+                renderManageCampaignItemsList();
+                document.getElementById("manageCampaignItemsModal").style.display = "flex";
+            }
+        });
+
+        document.getElementById("closeManageCampaignItemsModalBtn").addEventListener("click", () => {
+            document.getElementById("manageCampaignItemsModal").style.display = "none";
+        });
+        document.getElementById("closeManageCampaignItemsBtn").addEventListener("click", () => {
+            document.getElementById("manageCampaignItemsModal").style.display = "none";
         });
 
         document.getElementById("deleteCampaignBtn").addEventListener("click", () => {
