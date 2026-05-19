@@ -2395,6 +2395,11 @@
         }
 
         async function silentSync() {
+            // Safety check: Do not auto-sync if local database is empty to prevent accidental background deletion
+            if (residents.length === 0) {
+                updateSyncStatusUI();
+                return;
+            }
             const engine = localStorage.getItem('sync_engine') || 'kvdb';
             if (engine === 'google') {
                 const url = localStorage.getItem('google_sheets_url');
@@ -2437,6 +2442,17 @@
             const engine = localStorage.getItem('sync_engine') || 'kvdb';
             const syncBtn = document.getElementById("syncToCloudBtn");
             const originalHTML = syncBtn.innerHTML;
+            
+            // Safety confirmation for empty database sync
+            if (residents.length === 0) {
+                const lang = localStorage.getItem('app_language') || 'en';
+                const emptyConfirmMsg = lang === 'zh' ? "⚠️ 警告：您本地的普查数据库目前为空。同步到云端将清空您云端/Google 表格中的所有记录。确定要继续清空吗？" :
+                    (lang === 'ms' ? "⚠️ AMARAN: Pangkalan data tempatan anda kosong. Menyelaras ke awan akan memadam semua rekod dalam Google Sheets anda. Adakah anda pasti?" :
+                    "⚠️ WARNING: Your local database is empty. Syncing to the cloud will clear all records in your Google Sheets. Are you sure you want to proceed?");
+                if (!confirm(emptyConfirmMsg)) {
+                    return;
+                }
+            }
             
             syncBtn.disabled = true;
             syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
@@ -2509,6 +2525,14 @@
                         
                         const cloudData = await response.json();
                         if (Array.isArray(cloudData)) {
+                            if (cloudData.length === 0) {
+                                const confirmEmpty = lang === 'zh' ? "⚠️ 云端数据库为空。从云端恢复将清空您本地所有的普查记录。确定要继续吗？" :
+                                    (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Memulihkan dari awan akan memadamkan semua rekod tempatan anda. Teruskan?" :
+                                    "⚠️ The cloud database is empty. Restoring from cloud will clear all your local census records. Do you want to proceed?");
+                                if (!confirm(confirmEmpty)) {
+                                    return;
+                                }
+                            }
                             residents = cloudData;
                             await persistData();
                             clearForm();
@@ -2874,6 +2898,14 @@
 
                 const cloudData = await response.json();
                 if (Array.isArray(cloudData)) {
+                    if (cloudData.length === 0) {
+                        const confirmEmpty = lang === 'zh' ? "⚠️ 云端备份为空。从云端恢复将清空您本地所有的普查记录。确定要继续吗？" :
+                            (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Memulihkan dari awan akan memadamkan semua rekod tempatan anda. Teruskan?" :
+                            "⚠️ The cloud database is empty. Restoring from cloud will clear all your local census records. Do you want to proceed?");
+                        if (!confirm(confirmEmpty)) {
+                            return;
+                        }
+                    }
                     const overwriteConfirm = lang === 'zh' ? `已找到数据！成功拉取 ${cloudData.length} 条记录。要覆盖您本地当前的数据吗？` :
                         (lang === 'ms' ? `Data ditemui! Memulihkan ${cloudData.length} rekod. Gantikan data tempatan anda?` :
                         `Data found! Retrieved ${cloudData.length} records from cloud. Overwrite your current local data?`);
