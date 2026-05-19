@@ -1,0 +1,155 @@
+# Google Sheets Integration Guide
+
+To share and back up your census database across multiple devices using Google Sheets, you can set up a free Google Apps Script. 
+
+This script is designed with a **dual-storage system**:
+1. **Visual Sheet Rows**: It writes all resident information (Name, MyKad, Phone, Address, Age, Gender, State, Family Role) and campaign claims into standard spreadsheet columns so you can view, edit, or print them.
+2. **Lossless JSON Sync**: It backs up the raw data in the background. This ensures that nested data structures (like campaign donation histories) are never lost during sync.
+
+---
+
+## Step-by-Step Setup
+
+### Step 1: Create a Google Sheet
+1. Open your Google Drive and create a new **Google Sheet**.
+2. Name it something descriptive, like `Malaysia Census Database`.
+3. Rename the first tab/sheet from `Sheet1` to `CensusData` (or leave it as default, the script will handle it).
+
+### Step 2: Open the Apps Script Editor
+1. In the Google Sheets menu, click **Extensions** -> **Apps Script**.
+2. Delete any default code in the editor (`Code.gs`) and replace it with the code block below.
+
+### Step 3: Paste the Apps Script Code
+Copy and paste the following code:
+
+```javascript
+// Google Sheets Database Bridge for Census App
+// Deploy this script as a Web App to enable multi-device sync
+
+function doGet(e) {
+  var scriptProperties = PropertiesService.getScriptProperties();
+  var rawJson = scriptProperties.getProperty('census_db_json');
+  
+  if (!rawJson) {
+    rawJson = "[]";
+  }
+  
+  return ContentService.createTextOutput(rawJson)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var rawContents = e.postData.contents;
+    var residents = JSON.parse(rawContents);
+    
+    if (!Array.isArray(residents)) {
+      throw new Error("Invalid payload: data must be a JSON array.");
+    }
+    
+    // 1. Store the raw JSON losslessly in script properties for the next GET request
+    var scriptProperties = PropertiesService.getScriptProperties();
+    scriptProperties.setProperty('census_db_json', rawContents);
+    
+    // 2. Format and write the data into sheet rows for visual display
+    updateSpreadsheet(residents);
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: residents.length }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function updateSpreadsheet(residents) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("CensusData") || ss.getActiveSheet();
+  
+  sheet.clear(); // Clear old content
+  
+  // Set headers
+  var headers = [
+    "Resident ID", 
+    "Name", 
+    "MyKad Number", 
+    "Phone", 
+    "Age", 
+    "Gender", 
+    "Birth State", 
+    "Family Role", 
+    "Family Head ID", 
+    "Address", 
+    "Campaign Claims Summary",
+    "Last Updated"
+  ];
+  
+  sheet.appendRow(headers);
+  
+  // Style headers
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setFontWeight("bold");
+  headerRange.setBackground("#1e3a8a"); // primary-dark color
+  headerRange.setFontColor("white");
+  headerRange.setHorizontalAlignment("center");
+  
+  if (residents.length === 0) return;
+  
+  var rows = [];
+  for (var i = 0; i < residents.length; i++) {
+    var r = residents[i];
+    
+    // Create a compact readable string of their claims history
+    var claimsArr = [];
+    if (r.donationHistory && Array.isArray(r.donationHistory)) {
+      r.donationHistory.forEach(function(h) {
+        if (h.claimed && h.items) {
+          var itemsList = h.items.map(function(item) { return item.name; }).join(", ");
+          claimsArr.push(h.campaignId + " (" + itemsList + ")");
+        }
+      });
+    }
+    var claimsSummary = claimsArr.join(" | ");
+    
+    rows.push([
+      r.id || "",
+      r.name || "",
+      r.idNumber || "",
+      r.phone || "",
+      r.age !== undefined ? r.age : "",
+      r.gender || "",
+      r.state || "",
+      r.familyRole || "single",
+      r.familyHeadId || "",
+      r.address || "",
+      claimsSummary,
+      r.updatedAt || new Date().toISOString()
+    ]);
+  }
+  
+  sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  sheet.autoResizeColumns(1, headers.length);
+}
+```
+
+### Step 4: Deploy the Web App
+1. In the upper-right corner of the Apps Script page, click the blue **Deploy** button -> **New deployment**.
+2. Click the gear icon next to "Select type" and choose **Web app**.
+3. Fill in the deployment details:
+   * **Description**: `Census Sync Web App`
+   * **Execute as**: **Me (your-email@gmail.com)** *(This is critical so the script can write to your sheet)*
+   * **Who has access**: **Anyone** *(This is required so the app can contact the sheet without requiring Google sign-in)*
+4. Click **Deploy**.
+5. Google will ask you to **Authorize Access**. Click *Authorize Access*, choose your Google account, click *Advanced*, and select *Go to Untitled project (unsafe)*, then approve the permissions.
+6. Copy the **Web App URL** provided under the Web App section (it will end with `/exec`).
+
+---
+
+## Step 5: Connect Your Census App to Google Sheets
+1. Open your deployed Census App in the browser.
+2. Click the **Settings (⚙️)** icon in the upper-right corner.
+3. Set the **Sync Engine** option to **Google Sheets**.
+4. Paste your copied **Web App URL** into the **Google Web App URL** input field.
+5. Click **Save Settings**.
+6. Now, you can click **Sync to Cloud** to push your data to the spreadsheet, or **Restore Cloud** to pull down the database onto any new device!
