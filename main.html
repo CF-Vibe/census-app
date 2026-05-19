@@ -870,10 +870,10 @@
                             </select>
                         </div>
                         <div class="input-group" id="familyHeadGroup" style="display: none; gap: 10px;">
-                            <label for="familyHeadId" data-i18n="label_family_head" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                                <span><i class="fas fa-user-tie"></i> Select Family Head *</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 4px;">
+                                <label for="familyHeadId" data-i18n="label_family_head" style="margin-bottom: 0; font-weight: 600;"><i class="fas fa-user-tie"></i> Select Family Head *</label>
                                 <span id="headSearchCount" style="font-size: 0.72rem; color: var(--primary); font-weight: 600; display: none;"></span>
-                            </label>
+                            </div>
                             
                             <!-- Search Magnifier Bar for Family Head -->
                             <div class="search-input-wrapper" style="width: 100%; margin-bottom: 2px;">
@@ -1743,6 +1743,7 @@
 
         // Populates the "Select Family Head" dropdown with all registered heads (supports fuzzy search queries and auto-selection)
         function updateFamilyHeadDropdown(filterQuery = "") {
+            console.log("[CENSUS DICTIONARY] updateFamilyHeadDropdown called with query:", filterQuery);
             const selectEl = document.getElementById("familyHeadId");
             const feedbackEl = document.getElementById("headSearchCount");
             const savedVal = selectEl.value;
@@ -1752,6 +1753,7 @@
             
             // Filter all residents who are registered as 'head'
             let heads = residents.filter(r => r.familyRole === 'head' && r.id !== editId);
+            console.log("[CENSUS DICTIONARY] Registered heads in database memory:", heads.length, heads);
             
             // If a search query is typed in the magnifier bar
             const query = filterQuery.trim().toLowerCase();
@@ -1771,8 +1773,37 @@
             });
 
             // Update dynamic count feedback and handle auto-selection
-            if (feedbackEl) {
-                if (query) {
+            if (query) {
+                // 1. Auto-selection logic (independent of UI feedback element!)
+                if (heads.length === 1) {
+                    selectEl.value = heads[0].id;
+                    
+                    const autoApplyEl = document.getElementById("autoApplyAddress");
+                    const autoApply = autoApplyEl ? autoApplyEl.checked : false;
+                    if (autoApply && heads[0].address) {
+                        const addrInput = document.getElementById("address");
+                        if (addrInput && addrInput.value !== heads[0].address) {
+                            addrInput.value = heads[0].address;
+                            showToast(
+                                t("label_address"),
+                                lang === 'zh' 
+                                    ? `已自动复制户主 [${heads[0].name}] 的地址！`
+                                    : (lang === 'ms' 
+                                       ? `Alamat Ketua Keluarga [${heads[0].name}] disalin secara automatik!` 
+                                       : `Copied address from Family Head [${heads[0].name}]!`),
+                                "info"
+                            );
+                        }
+                    }
+                } else {
+                    const stillValid = heads.some(h => h.id === savedVal);
+                    if (!stillValid) {
+                        selectEl.value = "";
+                    }
+                }
+
+                // 2. UI Feedback element update
+                if (feedbackEl) {
                     feedbackEl.style.display = "inline";
                     if (heads.length === 0) {
                         feedbackEl.textContent = lang === 'zh' ? "未找到匹配户主" : (lang === 'ms' ? "Tiada padanan" : "No matches");
@@ -1780,38 +1811,13 @@
                     } else if (heads.length === 1) {
                         feedbackEl.textContent = lang === 'zh' ? "已自动选定唯一匹配" : (lang === 'ms' ? "Satu padanan dipilih" : "1 match selected");
                         feedbackEl.style.color = "var(--success)";
-                        
-                        // Auto-select this single match in dropdown
-                        selectEl.value = heads[0].id;
-                        
-                        // Auto-trigger copy address if checkbox is active
-                        const autoApply = document.getElementById("autoApplyAddress").checked;
-                        if (autoApply && heads[0].address) {
-                            const addrInput = document.getElementById("address");
-                            if (addrInput.value !== heads[0].address) {
-                                addrInput.value = heads[0].address;
-                                showToast(
-                                    t("label_address"),
-                                    lang === 'zh' 
-                                        ? `已自动复制户主 [${heads[0].name}] 的地址！`
-                                        : (lang === 'ms' 
-                                           ? `Alamat Ketua Keluarga [${heads[0].name}] disalin secara automatik!` 
-                                           : `Copied address from Family Head [${heads[0].name}]!`),
-                                    "info"
-                                );
-                            }
-                        }
                     } else {
                         feedbackEl.textContent = lang === 'zh' ? `找到 ${heads.length} 个匹配` : (lang === 'ms' ? `${heads.length} padanan` : `${heads.length} matches`);
                         feedbackEl.style.color = "var(--primary)";
-                        
-                        // If previously selected value is no longer inside the filtered subset, clear selection
-                        const stillValid = heads.some(h => h.id === savedVal);
-                        if (!stillValid) {
-                            selectEl.value = "";
-                        }
                     }
-                } else {
+                }
+            } else {
+                if (feedbackEl) {
                     feedbackEl.style.display = "none";
                     feedbackEl.textContent = "";
                 }
@@ -2632,43 +2638,52 @@
 
         // Search filter for Family Head dropdown
         document.getElementById("familyHeadSearch").addEventListener("input", (e) => {
+            console.log("[CENSUS DICTIONARY] User typing in family head search bar:", e.target.value);
             updateFamilyHeadDropdown(e.target.value);
         });
 
         // Copy Family Head's address automatically
-        document.getElementById("familyHeadId").addEventListener("change", (e) => {
-            const headId = e.target.value;
-            const autoApply = document.getElementById("autoApplyAddress").checked;
-            
-            if (headId && autoApply) {
-                const headObj = residents.find(r => r.id === headId);
-                if (headObj && headObj.address) {
-                    document.getElementById("address").value = headObj.address;
-                    showToast(
-                        t("label_address"),
-                        localStorage.getItem('app_language') === 'zh' 
-                            ? `已自动复制户主 [${headObj.name}] 的地址！`
-                            : (localStorage.getItem('app_language') === 'ms' 
-                               ? `Alamat Ketua Keluarga [${headObj.name}] disalin secara automatik!` 
-                               : `Copied address from Family Head [${headObj.name}]!`),
-                        "info"
-                    );
-                }
-            }
-        });
-
-        // Auto apply address checkbox trigger
-        document.getElementById("autoApplyAddress").addEventListener("change", (e) => {
-            if (e.target.checked) {
-                const headId = document.getElementById("familyHeadId").value;
-                if (headId) {
+        const familyHeadIdEl = document.getElementById("familyHeadId");
+        if (familyHeadIdEl) {
+            familyHeadIdEl.addEventListener("change", (e) => {
+                const headId = e.target.value;
+                const autoApplyEl = document.getElementById("autoApplyAddress");
+                const autoApply = autoApplyEl ? autoApplyEl.checked : false;
+                
+                if (headId && autoApply) {
                     const headObj = residents.find(r => r.id === headId);
                     if (headObj && headObj.address) {
                         document.getElementById("address").value = headObj.address;
+                        showToast(
+                            t("label_address"),
+                            localStorage.getItem('app_language') === 'zh' 
+                                ? `已自动复制户主 [${headObj.name}] 的地址！`
+                                : (localStorage.getItem('app_language') === 'ms' 
+                                   ? `Alamat Ketua Keluarga [${headObj.name}] disalin secara automatik!` 
+                                   : `Copied address from Family Head [${headObj.name}]!`),
+                            "info"
+                        );
                     }
                 }
-            }
-        });
+            });
+        }
+
+        // Auto apply address checkbox trigger
+        const autoApplyAddressEl = document.getElementById("autoApplyAddress");
+        if (autoApplyAddressEl) {
+            autoApplyAddressEl.addEventListener("change", (e) => {
+                if (e.target.checked) {
+                    const headIdEl = document.getElementById("familyHeadId");
+                    const headId = headIdEl ? headIdEl.value : "";
+                    if (headId) {
+                        const headObj = residents.find(r => r.id === headId);
+                        if (headObj && headObj.address) {
+                            document.getElementById("address").value = headObj.address;
+                        }
+                    }
+                }
+            });
+        }
 
         // 2. Submit form details
         document.getElementById("populationForm").addEventListener("submit", (e) => {
