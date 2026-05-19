@@ -764,6 +764,7 @@
                         <!-- options will be populated dynamically -->
                     </select>
                     <button id="newCampaignBtn" class="btn btn-primary btn-sm" style="height: 32px; padding: 0 14px; font-size: 0.75rem; border-radius: 20px;" data-i18n="btn_new_campaign">New Campaign</button>
+                    <button id="deleteCampaignBtn" class="btn btn-danger btn-sm" style="height: 32px; padding: 0 14px; font-size: 0.75rem; border-radius: 20px;" data-i18n="btn_delete_campaign">Delete Campaign</button>
                 </div>
                 <div class="language-switcher" style="display: flex; background: var(--slate-100); padding: 4px; border-radius: 40px; border: 1px solid var(--slate-200);">
                     <button onclick="changeLanguage('en')" id="lang-btn-en" class="lang-btn active">English</button>
@@ -1027,16 +1028,21 @@
                 </div>
 
                 <div class="form-grid" style="gap: 16px;">
-                    <div class="input-group">
-                        <label style="font-weight: 700;"><i class="fas fa-toggle-on"></i> Claim Status</label>
-                        <select id="dmClaimSelect">
-                            <option value="unclaimed" data-i18n="opt_unclaimed">Unclaimed</option>
-                            <option value="claimed" data-i18n="opt_claimed">Claimed</option>
-                        </select>
+                    <!-- Predefined Campaign Items (Click to Toggle Claim) -->
+                    <div style="grid-column: span 2; display: flex; flex-direction: column;">
+                        <label style="font-weight: 700; margin-bottom: 8px;" data-i18n="label_select_items"><i class="fas fa-tasks"></i> Select Items to Claim</label>
+                        <div id="dmCampaignItemsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; background: var(--slate-50); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--slate-200);">
+                            <!-- Dynamic items check list -->
+                        </div>
                     </div>
-                    <div class="input-group" id="dmItemInputGroup" style="display: none;">
-                        <label style="font-weight: 700;" data-i18n="label_donation_item"><i class="fas fa-box-open"></i> Donation Item Name</label>
-                        <input type="text" id="dmItemInput" placeholder="e.g. Food Pack, Financial Aid" data-i18n-placeholder="placeholder_donation_item">
+
+                    <!-- Add New Item Definition to Campaign -->
+                    <div class="input-group" style="grid-column: span 2;">
+                        <label style="font-weight: 700;" data-i18n="label_add_item_type"><i class="fas fa-plus-circle"></i> Add New Item Type to Campaign</label>
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <input type="text" id="dmNewCampaignItemInput" placeholder="e.g. Rice Pack 5kg, Cooking Oil" style="flex: 1; height: 38px; padding: 0 12px; border-radius: var(--radius-sm); border: 1px solid var(--slate-200); font-weight: 600;" data-i18n-placeholder="placeholder_donation_item">
+                            <button type="button" class="btn btn-primary" id="dmAddCampaignItemBtn" style="height: 38px; padding: 0 16px; margin: 0; display: inline-flex; align-items: center; justify-content: center;"><i class="fas fa-plus"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1129,6 +1135,7 @@
                 footer_text: "Trilingual Edition (English / Bahasa Melayu / 中文) · MyKad NRIC automatic place-of-birth & gender extraction system.",
                 status_cloud_key: "Cloud Key:",
                 btn_new_campaign: "New Campaign",
+                btn_delete_campaign: "Delete Campaign",
                 
                 // Household & Donation Translation Strings
                 label_family_role: "<i class=\"fas fa-users\"></i> Household Role *",
@@ -1141,6 +1148,9 @@
                 opt_unclaimed: "Unclaimed",
                 opt_claimed: "Claimed",
                 label_donation_item: "<i class=\"fas fa-box-open\"></i> Donation Item Name",
+                placeholder_donation_item: "e.g. Food Pack, Financial Aid",
+                label_select_items: "<i class=\"fas fa-tasks\"></i> Select Items to Claim",
+                label_add_item_type: "<i class=\"fas fa-plus-circle\"></i> Add New Item Type to Campaign",
                 placeholder_donation_item: "e.g. Food Pack, Financial Aid",
                 stat_total_households: "Total Households",
                 stat_total_households_desc: "Unique families / family heads",
@@ -1205,6 +1215,7 @@
                 footer_text: "Edisi Trikolour (Inggeris / Bahasa Melayu / 中文) · Sistem pengekstrakan automatik tempat kelahiran & jantina MyKad NRIC.",
                 status_cloud_key: "Kunci Awan:",
                 btn_new_campaign: "Kempen Baru",
+                btn_delete_campaign: "Padam Kempen",
                 
                 // Household & Donation
                 label_family_role: "<i class=\"fas fa-users\"></i> Peranan Isi Rumah *",
@@ -1217,6 +1228,9 @@
                 opt_unclaimed: "Belum Dituntut",
                 opt_claimed: "Telah Dituntut",
                 label_donation_item: "<i class=\"fas fa-box-open\"></i> Nama Barang Sumbangan",
+                placeholder_donation_item: "cth. Pek Makanan, Bantuan Wang",
+                label_select_items: "<i class=\"fas fa-tasks\"></i> Pilih Barang untuk Dituntut",
+                label_add_item_type: "<i class=\"fas fa-plus-circle\"></i> Tambah Jenis Barang ke Kempen",
                 placeholder_donation_item: "cth. Pek Makanan, Bantuan Wang",
                 stat_total_households: "Jumlah Isi Rumah",
                 stat_total_households_desc: "Keluarga unik / ketua keluarga",
@@ -1281,6 +1295,7 @@
                 footer_text: "三语版本 (英文 / 马来文 / 中文) · MyKad 身份证出生地与性别智能自动提取系统。",
                 status_cloud_key: "云端密钥:",
                 btn_new_campaign: "新活动",
+                btn_delete_campaign: "删除活动",
                 
                 // Household & Donation
                 label_family_role: "<i class=\"fas fa-users\"></i> 家庭户口角色 *",
@@ -1293,6 +1308,9 @@
                 opt_unclaimed: "尚未领取",
                 opt_claimed: "已领取",
                 label_donation_item: "<i class=\"fas fa-box-open\"></i> 援助物资名称",
+                placeholder_donation_item: "例如: 粮食包、援助金、生活物资",
+                label_select_items: "<i class=\"fas fa-tasks\"></i> 选择要领取的物资",
+                label_add_item_type: "<i class=\"fas fa-plus-circle\"></i> 添加新物品类型到当前活动",
                 placeholder_donation_item: "例如: 粮食包、援助金、生活物资",
                 stat_total_households: "总普查户数",
                 stat_total_households_desc: "系统中登记的独立家庭总数",
@@ -1361,6 +1379,16 @@
             return GENDER_TRANSLATIONS[gender] ? GENDER_TRANSLATIONS[gender][lang] : gender;
         }
 
+        function escapeHtml(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         // ----------------------------- Malaysian State Birth Codes (PB) -----------------------------
         const MALAYSIAN_STATES = {
             '01': 'Johor', '21': 'Johor', '22': 'Johor', '23': 'Johor', '24': 'Johor',
@@ -1403,9 +1431,20 @@
 
             if (!Array.isArray(campaigns) || campaigns.length === 0) {
                 campaigns = [
-                    { id: "default", name: "Default Campaign", createdAt: new Date().toISOString() }
+                    { id: "default", name: "Default Campaign", createdAt: new Date().toISOString(), items: ["Aid Pack"] }
                 ];
                 localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+            } else {
+                let updated = false;
+                campaigns.forEach(c => {
+                    if (!c.items) {
+                        c.items = ["Aid Pack"];
+                        updated = true;
+                    }
+                });
+                if (updated) {
+                    localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+                }
             }
 
             activeCampaignId = localStorage.getItem('active_campaign_id');
@@ -1433,7 +1472,9 @@
         function isClaimedInCurrentCampaign(resident) {
             if (!resident.donationHistory) return false;
             const entry = resident.donationHistory.find(h => h.campaignId === activeCampaignId);
-            return entry && (entry.claimed === true || entry.claimed === 'true' || entry.donationClaimed === true || entry.donationClaimed === 'true');
+            if (!entry) return false;
+            if (entry.items && entry.items.length > 0) return true;
+            return entry.claimed === true || entry.claimed === 'true' || entry.donationClaimed === true || entry.donationClaimed === 'true';
         }
 
         function getResidentCampaignEntry(resident, campaignId) {
@@ -1454,8 +1495,7 @@
                             r.donationHistory.push({
                                 campaignId: 'default',
                                 claimed: true,
-                                donationItem: r.donationItem || 'Aid Pack',
-                                donationTime: r.donationTime || new Date().toISOString()
+                                items: [{ name: r.donationItem || 'Aid Pack', time: r.donationTime || new Date().toISOString() }]
                             });
                         }
                     }
@@ -2127,8 +2167,19 @@
                 let donationBadge = "";
                 if (isClaimedInCurrentCampaign(rec)) {
                     const entry = getResidentCampaignEntry(rec, activeCampaignId);
-                    const itemName = entry ? (entry.donationItem || entry.item || "Aid Pack") : "Aid Pack";
-                    donationBadge = `<span class="badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;"><i class="fas fa-gift" style="margin-right: 4px;"></i> ${itemName}</span>`;
+                    let items = [];
+                    if (entry) {
+                        if (entry.items && Array.isArray(entry.items)) {
+                            items = entry.items.map(it => it.name || it.donationItem);
+                        } else if (entry.donationItem || entry.item) {
+                            items = [entry.donationItem || entry.item];
+                        }
+                    }
+                    if (items.length === 0) items = ["Aid Pack"];
+                    
+                    donationBadge = items.map(itemName => 
+                        `<span class="badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;"><i class="fas fa-gift" style="margin-right: 4px;"></i> ${escapeHtml(itemName)}</span>`
+                    ).join("");
                 } else {
                     // Check if anyone else in their family has already claimed to warn volunteers
                     const claimant = checkDoubleClaim(rec.id, rec.familyRole, rec.familyHeadId);
@@ -2385,6 +2436,174 @@
         // ----------------------------- Quick Donation Claim Controller -----------------------------
         const donationModal = document.getElementById("donationModal");
         
+        let modalClaimedItems = [];
+
+        function renderCampaignItemsSelectionList() {
+            const listEl = document.getElementById("dmCampaignItemsList");
+            if (!listEl) return;
+            listEl.innerHTML = "";
+            
+            const campaign = campaigns.find(c => c.id === activeCampaignId);
+            const campaignItems = campaign ? (campaign.items || []) : [];
+            
+            if (campaignItems.length === 0) {
+                const lang = localStorage.getItem('app_language') || 'en';
+                const emptyText = lang === 'zh' ? '该活动暂无定义物品。请在下方添加。' : (lang === 'ms' ? 'Tiada barangan ditakrifkan untuk kempen ini. Tambah di bawah.' : 'No items defined for this campaign. Add below.');
+                listEl.innerHTML = `<span style="color: var(--slate-400); font-size: 0.8rem; font-style: italic; text-align: center; padding: 10px 0;">${emptyText}</span>`;
+                return;
+            }
+            
+            campaignItems.forEach((itemName) => {
+                const isClaimed = modalClaimedItems.some(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase());
+                
+                const row = document.createElement("label");
+                row.style.display = "flex";
+                row.style.alignItems = "center";
+                row.style.justifyContent = "space-between";
+                row.style.background = isClaimed ? "#f0fdf4" : "#fff";
+                row.style.padding = "10px 14px";
+                row.style.borderRadius = "8px";
+                row.style.border = isClaimed ? "1.5px solid #b7ebc6" : "1px solid var(--slate-200)";
+                row.style.cursor = "pointer";
+                row.style.transition = "var(--transition)";
+                
+                const claimRecord = modalClaimedItems.find(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase());
+                const dateStr = claimRecord && claimRecord.time ? new Date(claimRecord.time).toLocaleDateString() : "";
+                
+                row.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" ${isClaimed ? 'checked' : ''} onchange="toggleCampaignItemClaim('${escapeHtml(itemName)}', this.checked)">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--slate-800);">${escapeHtml(itemName)}</span>
+                            ${dateStr ? `<span style="font-size: 0.7rem; color: var(--slate-400);">${dateStr}</span>` : ''}
+                        </div>
+                    </div>
+                    <i class="fas fa-trash-alt" style="color: var(--danger); cursor: pointer; padding: 4px;" onclick="event.preventDefault(); deleteCampaignItemType('${escapeHtml(itemName)}')"></i>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        window.toggleCampaignItemClaim = (itemName, isChecked) => {
+            const resident = residents.find(r => r.id === activeDonationResidentId);
+            if (!resident) return;
+            
+            if (isChecked) {
+                const claimant = checkDoubleClaimForItem(resident.id, resident.familyRole, resident.familyHeadId, itemName);
+                if (claimant) {
+                    const lang = localStorage.getItem('app_language') || 'en';
+                    const confirmMsg = lang === 'zh' ? `⚠️ 发现同户重复领取！同户成员 ${claimant.name} 已经领过 [${itemName}]。是否仍要重复发放？` :
+                        (lang === 'ms' ? `⚠️ Tuntutan Berganda Dikesan! Ahli keluarga serumah ${claimant.name} telah menuntut [${itemName}]. Adakah anda mahu meneruskan?` :
+                        `⚠️ Double Claim Warning! Household member ${claimant.name} has already claimed [${itemName}]. Do you still want to issue this?`);
+                    if (!confirm(confirmMsg)) {
+                        renderCampaignItemsSelectionList();
+                        return;
+                    }
+                }
+                
+                if (!modalClaimedItems.some(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase())) {
+                    modalClaimedItems.push({
+                        name: itemName,
+                        time: new Date().toISOString()
+                    });
+                }
+            } else {
+                modalClaimedItems = modalClaimedItems.filter(it => it.name.trim().toLowerCase() !== itemName.trim().toLowerCase());
+            }
+            renderCampaignItemsSelectionList();
+        };
+
+        window.deleteCampaignItemType = (itemName) => {
+            const lang = localStorage.getItem('app_language') || 'en';
+            const confirmMsg = lang === 'zh' ? `确定要从本活动中删除物品类型 [${itemName}] 吗？这不会自动删除已登记的个人领物记录，但该物品不再出现在可选列表中。` :
+                (lang === 'ms' ? `Adakah anda pasti mahu memadamkan jenis barangan [${itemName}] daripada kempen ini?` :
+                `Are you sure you want to delete the item type [${itemName}] from this campaign?`);
+            
+            if (confirm(confirmMsg)) {
+                const campaign = campaigns.find(c => c.id === activeCampaignId);
+                if (campaign) {
+                    campaign.items = (campaign.items || []).filter(it => it.trim().toLowerCase() !== itemName.trim().toLowerCase());
+                    localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+                    modalClaimedItems = modalClaimedItems.filter(it => it.name.trim().toLowerCase() !== itemName.trim().toLowerCase());
+                    renderCampaignItemsSelectionList();
+                }
+            }
+        };
+
+        function getHouseholdClaimsInCurrentCampaign(residentId, familyRole, familyHeadId) {
+            let householdIds = [];
+            if (familyRole === 'head') {
+                householdIds = residents
+                    .filter(r => r.id === residentId || (r.familyRole === 'member' && r.familyHeadId === residentId))
+                    .map(r => r.id);
+            } else if (familyRole === 'member' && familyHeadId) {
+                householdIds = residents
+                    .filter(r => r.id === familyHeadId || (r.familyRole === 'member' && r.familyHeadId === familyHeadId))
+                    .map(r => r.id);
+            } else {
+                return [];
+            }
+
+            const claims = [];
+            residents.forEach(r => {
+                if (householdIds.includes(r.id) && r.id !== residentId) {
+                    const entry = getResidentCampaignEntry(r, activeCampaignId);
+                    if (entry) {
+                        let items = [];
+                        if (entry.items && Array.isArray(entry.items)) {
+                            items = entry.items;
+                        } else if (entry.donationItem || entry.item) {
+                            items = [{ name: entry.donationItem || entry.item, time: entry.donationTime || entry.time }];
+                        }
+                        items.forEach(it => {
+                            claims.push({
+                                resident: r,
+                                itemName: it.name || it.donationItem,
+                                time: it.time || it.donationTime
+                            });
+                        });
+                    }
+                }
+            });
+            return claims;
+        }
+
+        function checkDoubleClaimForItem(residentId, familyRole, familyHeadId, itemName) {
+            let householdIds = [];
+            if (familyRole === 'head') {
+                householdIds = residents
+                    .filter(r => r.id === residentId || (r.familyRole === 'member' && r.familyHeadId === residentId))
+                    .map(r => r.id);
+            } else if (familyRole === 'member' && familyHeadId) {
+                householdIds = residents
+                    .filter(r => r.id === familyHeadId || (r.familyRole === 'member' && r.familyHeadId === familyHeadId))
+                    .map(r => r.id);
+            } else {
+                return null;
+            }
+
+            const normalizedNew = itemName.trim().toLowerCase();
+
+            for (const r of residents) {
+                if (householdIds.includes(r.id) && r.id !== residentId) {
+                    const entry = getResidentCampaignEntry(r, activeCampaignId);
+                    if (entry) {
+                        let items = [];
+                        if (entry.items && Array.isArray(entry.items)) {
+                            items = entry.items;
+                        } else if (entry.donationItem || entry.item) {
+                            items = [{ name: entry.donationItem || entry.item }];
+                        }
+                        const match = items.find(it => (it.name || it.donationItem || "").trim().toLowerCase() === normalizedNew);
+                        if (match) {
+                            return r;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         function openDonationModal(residentId) {
             const resident = residents.find(r => r.id === residentId);
             if (!resident) return;
@@ -2414,37 +2633,36 @@
             }
             document.getElementById("dmResidentFamily").textContent = familyInfoText;
             
-            // Set claim selectors
-            const claimedSelect = document.getElementById("dmClaimSelect");
-            const itemInputGroup = document.getElementById("dmItemInputGroup");
-            const itemInput = document.getElementById("dmItemInput");
-            
-            if (isClaimedInCurrentCampaign(resident)) {
-                const entry = getResidentCampaignEntry(resident, activeCampaignId);
-                claimedSelect.value = "claimed";
-                itemInputGroup.style.display = "flex";
-                itemInput.value = entry ? (entry.donationItem || entry.item || "") : "";
-            } else {
-                claimedSelect.value = "unclaimed";
-                itemInputGroup.style.display = "none";
-                itemInput.value = "";
+            // Load items
+            modalClaimedItems = [];
+            const entry = getResidentCampaignEntry(resident, activeCampaignId);
+            if (entry) {
+                if (entry.items && Array.isArray(entry.items)) {
+                    modalClaimedItems = entry.items.map(it => ({ name: it.name || it.donationItem, time: it.time || it.donationTime }));
+                } else if (entry.donationItem || entry.item) {
+                    modalClaimedItems = [{ name: entry.donationItem || entry.item, time: entry.donationTime || entry.time || new Date().toISOString() }];
+                }
             }
             
+            renderCampaignItemsSelectionList();
+            document.getElementById("dmNewCampaignItemInput").value = "";
+            
             // Anti-Double-Take Claim check
-            const claimant = checkDoubleClaim(resident.id, resident.familyRole, resident.familyHeadId);
             const warningCard = document.getElementById("doubleClaimWarningCard");
             const warningText = document.getElementById("doubleClaimWarningText");
             
-            if (claimant) {
+            const householdClaims = getHouseholdClaimsInCurrentCampaign(resident.id, resident.familyRole, resident.familyHeadId);
+            if (householdClaims.length > 0) {
                 warningCard.style.display = "block";
-                const claimantEntry = getResidentCampaignEntry(claimant, activeCampaignId);
-                const claimantItemName = claimantEntry ? (claimantEntry.donationItem || claimantEntry.item || "") : "";
-                const claimantTime = claimantEntry ? (claimantEntry.donationTime || claimantEntry.time || "") : "";
-                const cDate = claimantTime ? new Date(claimantTime).toLocaleDateString() : "";
                 
-                const dcMsg = lang === 'zh' ? `⚠️ 发现同户重复领取！同户成员 ${claimant.name} (MyKad: ${claimant.idNumber}) 已于 ${cDate} 领取了援助物资 [${claimantItemName}]。请仔细核实，谨防重复申领！` :
-                    (lang === 'ms' ? `⚠️ Tuntutan Berganda Dikesan! Ahli keluarga serumah, ${claimant.name} (MyKad: ${claimant.idNumber}) telah menuntut [${claimantItemName}] pada ${cDate}. Sila semak dengan teliti!` :
-                    `⚠️ Double Claim Warning! A household member, ${claimant.name} (MyKad: ${claimant.idNumber}), has already claimed [${claimantItemName}] on ${cDate}. Avoid double distribution!`);
+                const claimsListStr = householdClaims.map(hc => {
+                    const cDate = hc.time ? new Date(hc.time).toLocaleDateString() : "";
+                    return `${hc.resident.name} (${hc.itemName} - ${cDate})`;
+                }).join(", ");
+                
+                const dcMsg = lang === 'zh' ? `⚠️ 同户已领物品：${claimsListStr}` :
+                    (lang === 'ms' ? `⚠️ Barangan dituntut ahli serumah: ${claimsListStr}` :
+                    `⚠️ Family members claimed: ${claimsListStr}`);
                 
                 warningText.textContent = dcMsg;
             } else {
@@ -2454,40 +2672,35 @@
             donationModal.style.display = "flex";
         }
 
-        document.getElementById("dmClaimSelect").addEventListener("change", (e) => {
-            const group = document.getElementById("dmItemInputGroup");
-            group.style.display = (e.target.value === 'claimed') ? 'flex' : 'none';
-        });
-
         document.getElementById("closeDonationModalBtn").addEventListener("click", () => donationModal.style.display = "none");
         document.getElementById("cancelDonationModalBtn").addEventListener("click", () => donationModal.style.display = "none");
+
+        document.getElementById("dmAddCampaignItemBtn").addEventListener("click", () => {
+            const input = document.getElementById("dmNewCampaignItemInput");
+            const itemName = input.value.trim();
+            if (!itemName) return;
+            
+            const campaign = campaigns.find(c => c.id === activeCampaignId);
+            if (campaign) {
+                if (!campaign.items) campaign.items = [];
+                
+                // Avoid duplicates in campaign items
+                const exists = campaign.items.some(it => it.trim().toLowerCase() === itemName.toLowerCase());
+                if (!exists) {
+                    campaign.items.push(itemName);
+                    localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+                }
+                
+                input.value = "";
+                renderCampaignItemsSelectionList();
+            }
+        });
 
         document.getElementById("saveDonationClaimBtn").addEventListener("click", async () => {
             const resident = residents.find(r => r.id === activeDonationResidentId);
             if (!resident) return;
             
-            const isClaimed = document.getElementById("dmClaimSelect").value === 'claimed';
-            const itemName = document.getElementById("dmItemInput").value.trim();
             const lang = localStorage.getItem('app_language') || 'en';
-            
-            if (isClaimed && !itemName) {
-                alert(lang === 'zh' ? "请输入援助物资的名称！" : (lang === 'ms' ? "Sila masukkan nama barangan sumbangan!" : "Please enter the donation item name!"));
-                return;
-            }
-            
-            // Check double-claim override alert
-            if (isClaimed) {
-                const claimant = checkDoubleClaim(resident.id, resident.familyRole, resident.familyHeadId);
-                if (claimant) {
-                    const confirmMsg = lang === 'zh' ? `⚠️ 确定要发放吗？同户成员 ${claimant.name} 已经领取过一次了。是否确认发放例外？` :
-                        (lang === 'ms' ? `⚠️ Mahu meneruskan sumbangan? Ahli keluarga serumah ${claimant.name} telah pun menuntut. Adakah anda ingin membuat pengecualian?` :
-                        `⚠️ Double-Claim Warning! Household member ${claimant.name} has already claimed. Do you still want to issue this exception?`);
-                    
-                    if (!confirm(confirmMsg)) {
-                        return; // Cancel
-                    }
-                }
-            }
             
             // Apply save to donationHistory
             if (!resident.donationHistory) {
@@ -2497,21 +2710,19 @@
             // Remove existing entry for this campaign
             resident.donationHistory = resident.donationHistory.filter(h => h.campaignId !== activeCampaignId);
             
-            if (isClaimed) {
-                resident.donationHistory.push({
-                    campaignId: activeCampaignId,
-                    claimed: true,
-                    donationItem: itemName,
-                    donationTime: new Date().toISOString()
-                });
-            }
+            // Save the items array inside the campaign entry
+            resident.donationHistory.push({
+                campaignId: activeCampaignId,
+                claimed: modalClaimedItems.length > 0,
+                items: modalClaimedItems
+            });
             
             await persistData();
             donationModal.style.display = "none";
             
-            const successMsg = isClaimed 
-                ? (lang === 'zh' ? `已成功为 ${resident.name} 登记物资发放！` : (lang === 'ms' ? `Sumbangan untuk ${resident.name} berjaya direkodkan!` : `Donation claim successfully recorded for ${resident.name}!`))
-                : (lang === 'zh' ? `已成功取消 ${resident.name} 的物资领取记录。` : (lang === 'ms' ? `Rekod tuntutan ${resident.name} telah dibatalkan.` : `Claim record successfully revoked for ${resident.name}.`));
+            const successMsg = lang === 'zh' ? `已成功保存 ${resident.name} 的领物记录！` : 
+                (lang === 'ms' ? `Rekod tuntutan ${resident.name} berjaya disimpan!` : 
+                `Claim records successfully saved for ${resident.name}!`);
             
             showToast(t("label_donation_status"), successMsg, "success");
         });
@@ -2669,8 +2880,16 @@
                     else if (r.familyRole === 'member') roleStr = "Family Member / Ahli Keluarga / 家庭成员";
 
                     const entry = getResidentCampaignEntry(r, activeCampaignId);
-                    const isClaimed = entry && (entry.claimed === true || entry.claimed === 'true' || entry.donationClaimed === true || entry.donationClaimed === 'true');
-                    const itemName = entry ? (entry.donationItem || entry.item || '—') : '—';
+                    let itemsList = [];
+                    if (entry) {
+                        if (entry.items && Array.isArray(entry.items)) {
+                            itemsList = entry.items.map(it => it.name || it.donationItem);
+                        } else if (entry.donationItem || entry.item) {
+                            itemsList = [entry.donationItem || entry.item];
+                        }
+                    }
+                    const isClaimed = itemsList.length > 0 || (entry && (entry.claimed === true || entry.claimed === 'true' || entry.donationClaimed === true || entry.donationClaimed === 'true'));
+                    const itemName = isClaimed ? (itemsList.length > 0 ? itemsList.join(", ") : 'Aid Pack') : '—';
                     const claimTime = entry ? (entry.donationTime || entry.time || '') : '';
 
                     return {
@@ -2919,7 +3138,7 @@
         document.getElementById("exportLocalBtn").addEventListener("click", exportToExcel); // Hooked to Genuine SheetJS Excel Exporter
         document.getElementById("clearAllBtn").addEventListener("click", clearAllData);
 
-        // Campaign Selector & Creator Bindings
+        // Campaign Selector & Creator & Deletion Bindings
         document.getElementById("campaignSelect").addEventListener("change", (e) => {
             activeCampaignId = e.target.value;
             localStorage.setItem('active_campaign_id', activeCampaignId);
@@ -2936,7 +3155,8 @@
                 campaigns.push({
                     id: newId,
                     name: name.trim(),
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
+                    items: []
                 });
                 localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
                 activeCampaignId = newId;
@@ -2948,6 +3168,46 @@
                 
                 const successMsg = lang === 'zh' ? `已成功创建并切换至新活动：${name}` : (lang === 'ms' ? `Berjaya mencipta dan beralih ke kempen baru: ${name}` : `Successfully created and switched to new campaign: ${name}`);
                 showToast(t("btn_new_campaign") || "New Campaign", successMsg, "success");
+            }
+        });
+
+        document.getElementById("deleteCampaignBtn").addEventListener("click", () => {
+            const lang = localStorage.getItem('app_language') || 'en';
+            
+            if (campaigns.length <= 1) {
+                const alertMsg = lang === 'zh' ? "系统中必须保留至少一个活动！无法删除唯一活动。" :
+                    (lang === 'ms' ? "Sistem mesti mengekalkan sekurang-kurangnya satu kempen! Tidak boleh memadam kempen tunggal." :
+                    "The system must retain at least one campaign! Cannot delete the only remaining campaign.");
+                alert(alertMsg);
+                return;
+            }
+
+            const confirmMsg = lang === 'zh' ? "确定要删除当前活动吗？该活动下的所有领物记录都将被永久清除。" :
+                (lang === 'ms' ? "Adakah anda pasti mahu memadamkan kempen aktif? Semua rekod tuntutan dalam kempen ini akan dibuang secara kekal." :
+                "Are you sure you want to delete the active campaign? All claims recorded in this campaign will be removed permanently.");
+            
+            if (confirm(confirmMsg)) {
+                const deletedCampaignId = activeCampaignId;
+                
+                campaigns = campaigns.filter(c => c.id !== deletedCampaignId);
+                localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+                
+                residents.forEach(r => {
+                    if (r.donationHistory) {
+                        r.donationHistory = r.donationHistory.filter(h => h.campaignId !== deletedCampaignId);
+                    }
+                });
+                
+                activeCampaignId = campaigns[0].id;
+                localStorage.setItem('active_campaign_id', activeCampaignId);
+                
+                renderCampaignSelector();
+                persistData();
+                
+                const successMsg = lang === 'zh' ? "活动已成功删除。" :
+                    (lang === 'ms' ? "Kempen berjaya dipadamkan." :
+                    "Campaign successfully deleted.");
+                showToast(t("btn_delete_campaign") || "Delete Campaign", successMsg, "success");
             }
         });
 
