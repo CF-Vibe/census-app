@@ -1,5 +1,5 @@
 {
-  "version": "1.0.3",
-  "releaseNotes": "Stable release with Google Sheets sync safety checks",
+  "version": "1.0.4",
+  "releaseNotes": "Added Household Family Tree visualizer modal",
   "downloadUrl": "https://github.com/CF-Vibe/census-app/raw/main/index.html"
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="app-version" content="1.0.3">
+    <meta name="app-version" content="1.0.4">
     <title>Malaysia Census System - Digital Management Center</title>
     <!-- Modern Typography: Inter & Outfit -->
     <link
@@ -1347,6 +1347,24 @@
         </div>
     </div>
 
+    <!-- Household Family Tree Modal -->
+    <div id="householdModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-sitemap" style="color: var(--primary);"></i> <span data-i18n="ht_modal_title">Household Family Tree</span></h3>
+                <button class="modal-close-btn" id="closeHouseholdModalBtn">&times;</button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                <div id="householdTreeContainer" style="background: var(--slate-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--slate-200); max-height: 400px; overflow-y: auto;">
+                    <!-- Dynamic Household Tree injected here -->
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 0 0 0;">
+                <button class="btn btn-primary btn-sm" id="doneHouseholdModalBtn" style="width: 100%;"><i class="fas fa-check"></i> <span data-i18n="btn_save">Done</span></button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const APP_VERSION = document.querySelector('meta[name="app-version"]').getAttribute('content');
         // ----------------------------- Trilingual Translation Dictionary -----------------------------
@@ -1428,6 +1446,7 @@
                 stat_total_households_desc: "Unique families / family heads",
                 stat_donations_delivered: "Aids Distributed",
                 stat_donations_delivered_desc: "Total claimed donation packages",
+                ht_modal_title: "Household Family Tree",
 
                 // Toast/Dialogs
                 toast_missing: "Name and MyKad number are required!",
@@ -1519,9 +1538,10 @@
                 cc_label_added_items: "Barang Ditambah:",
                 cc_btn_create: "Cipta Kempen",
                 stat_total_households: "Jumlah Isi Rumah",
-                stat_total_households_desc: "Keluarga unik / ketua keluarga",
+                stat_total_households_desc: "Keluarga / ketua keluarga unik",
                 stat_donations_delivered: "Bantuan Diedarkan",
-                stat_donations_delivered_desc: "Jumlah pakej sumbangan dituntut",
+                stat_donations_delivered_desc: "Jumlah pakej bantuan dituntut",
+                ht_modal_title: "Carta Isi Rumah",
 
                 // Toast/Dialogs
                 toast_missing: "Nama dan nombor MyKad diperlukan!",
@@ -1616,6 +1636,7 @@
                 stat_total_households_desc: "系统中登记的独立家庭总数",
                 stat_donations_delivered: "已发放物资笔数",
                 stat_donations_delivered_desc: "系统内已确认领取的物资包总数",
+                ht_modal_title: "家庭成员图谱",
 
                 // Toast/Dialogs
                 toast_missing: "姓名与身份证号码 (MyKad) 不能为空！",
@@ -2537,6 +2558,7 @@
                             <span class="address-cell" title="${escapeHtml(rec.address || '')}">${escapeHtml(rec.address || '—')}</span>
                         </td>
                         <td class="action-icons">
+                            <i class="fas fa-sitemap" onclick="window.viewHouseholdById('${rec.id}')" title="View Family Tree" style="color: var(--info);"></i>
                             <i class="fas fa-hand-holding-heart fa-edit" style="color: var(--success); background: #ecfdf5;" onclick="window.manageDonationById('${rec.id}')" title="Manage Aid Claim"></i>
                             <i class="fas fa-edit" onclick="window.editRecordById('${rec.id}')" title="Edit Profile"></i>
                             <i class="fas fa-trash-alt" onclick="window.deleteRecordById('${rec.id}')" title="Delete Profile"></i>
@@ -2563,6 +2585,7 @@
             if (rec) editRecord(rec);
         };
         window.manageDonationById = (id) => openDonationModal(id);
+        window.viewHouseholdById = (id) => openHouseholdModal(id);
 
         // ----------------------------- Sync Engine Infrastructure -----------------------------
 
@@ -3347,6 +3370,83 @@
 
             showToast(t("label_donation_status"), successMsg, "success");
         });
+
+        // ----------------------------- Household Family Tree Logic -----------------------------
+        const householdModal = document.getElementById("householdModal");
+        
+        function openHouseholdModal(residentId) {
+            const resident = residents.find(r => r.id === residentId);
+            if (!resident) return;
+            
+            let headId = resident.familyRole === 'head' ? resident.id : (resident.familyHeadId || resident.id);
+            const head = residents.find(r => r.id === headId);
+            const members = residents.filter(r => r.familyRole === 'member' && r.familyHeadId === headId);
+            
+            const container = document.getElementById("householdTreeContainer");
+            const lang = localStorage.getItem('app_language') || 'en';
+            
+            let html = `
+                <div style="font-weight: 700; margin-bottom: 12px; font-size: 1.1rem; color: var(--slate-800); border-bottom: 2px solid var(--slate-200); padding-bottom: 8px;">
+                    <i class="fas fa-home" style="color: var(--primary);"></i> ${lang === 'zh' ? '家庭户口' : (lang === 'ms' ? 'Isi Rumah' : 'Household')}
+                </div>
+            `;
+            
+            // Function to generate the person card HTML
+            const generatePersonCard = (person, isHead) => {
+                const badgeColor = isHead ? "var(--primary)" : "var(--info)";
+                const badgeBg = isHead ? "#eff6ff" : "#f0f9ff";
+                const roleText = isHead ? 
+                    (lang === 'zh' ? '户主' : (lang === 'ms' ? 'Ketua' : 'Head')) : 
+                    (lang === 'zh' ? '成员' : (lang === 'ms' ? 'Ahli' : 'Member'));
+                const icon = isHead ? "fa-crown" : "fa-user";
+                
+                let claimsText = "";
+                if (isClaimedInCurrentCampaign(person)) {
+                    const entry = getResidentCampaignEntry(person, activeCampaignId);
+                    let items = entry ? (entry.items || []).map(it => it.name || it.donationItem) : ["Aid Pack"];
+                    if (items.length === 0) items = ["Aid Pack"];
+                    claimsText = `<div style="font-size: 0.75rem; font-weight: 700; color: #047857; margin-top: 6px;"><i class="fas fa-gift"></i> ${lang === 'zh' ? '已领: ' : 'Claimed: '}${escapeHtml(items.join(", "))}</div>`;
+                } else {
+                    claimsText = `<div style="font-size: 0.75rem; font-weight: 600; color: var(--slate-400); margin-top: 6px;"><i class="fas fa-times-circle"></i> ${lang === 'zh' ? '尚未领取' : 'Unclaimed'}</div>`;
+                }
+
+                return `
+                    <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; position: relative;">
+                        <span style="position: absolute; top: 10px; right: 10px; background: ${badgeBg}; color: ${badgeColor}; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; font-weight: 700; border: 1px solid ${badgeColor}33;">
+                            <i class="fas ${icon}"></i> ${roleText}
+                        </span>
+                        <div style="font-weight: 700; color: var(--slate-900); font-size: 0.95rem; margin-bottom: 4px;">${escapeHtml(person.name)}</div>
+                        <div style="font-family: monospace; font-size: 0.8rem; color: var(--slate-500); font-weight: 600;"><i class="fas fa-id-card"></i> ${escapeHtml(person.idNumber)}</div>
+                        ${claimsText}
+                    </div>
+                `;
+            };
+            
+            // Add the head if it exists (for a single person household, they are their own head)
+            if (head) {
+                html += `<div style="margin-bottom: 10px;">${generatePersonCard(head, true)}</div>`;
+            } else {
+                // Failsafe in case head is deleted but members still exist
+                html += `<div style="color: var(--danger); font-weight: 600; font-size: 0.85rem; padding: 10px; background: #fef2f2; border: 1px dashed #f87171; border-radius: var(--radius-sm); margin-bottom: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i> ${lang === 'zh' ? '户主档案已被删除或丢失。' : 'Family Head record is deleted or missing.'}
+                </div>`;
+            }
+            
+            // Add all members
+            if (members.length > 0) {
+                html += `<div style="margin-left: 20px; border-left: 2px solid var(--slate-300); padding-left: 15px;">`;
+                members.forEach(m => {
+                    html += generatePersonCard(m, false);
+                });
+                html += `</div>`;
+            }
+            
+            container.innerHTML = html;
+            householdModal.style.display = "flex";
+        }
+        
+        document.getElementById("closeHouseholdModalBtn").addEventListener("click", () => householdModal.style.display = "none");
+        document.getElementById("doneHouseholdModalBtn").addEventListener("click", () => householdModal.style.display = "none");
 
         // ----------------------------- Restore Modal Controls (kvdb) -----------------------------
         const cloudModal = document.getElementById("cloudModal");
