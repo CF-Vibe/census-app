@@ -63,7 +63,7 @@ function doPost(e) {
   }
 }
 
-function updateSpreadsheet(residents) {
+function updateSpreadsheet(payload) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("CensusData") || ss.getActiveSheet();
   
@@ -93,6 +93,11 @@ function updateSpreadsheet(residents) {
   headerRange.setBackground("#1e3a8a"); // primary-dark color
   headerRange.setFontColor("white");
   headerRange.setHorizontalAlignment("center");
+  
+  // Filter out campaign metadata item from sheet rows
+  var residents = payload.filter(function(r) {
+    return r && r.id !== "METADATA_CAMPAIGNS";
+  });
   
   if (residents.length === 0) return;
   

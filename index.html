@@ -748,6 +748,13 @@
 </head>
 
 <body>
+    <!-- Auto-update Notification Banner -->
+    <div id="updateBanner" style="display: none; background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 10px 24px; text-align: center; font-weight: 500; font-size: 0.85rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05); font-family: 'Inter', sans-serif;">
+        <span id="updateBannerText">🚀 A new version of the Census System is available!</span>
+        <a id="downloadUpdateBtn" href="#" target="_blank" style="color: white; text-decoration: underline; margin-left: 8px; font-weight: 700;">Download Now</a>
+        <button onclick="document.getElementById('updateBanner').style.display='none'" style="background:none; border:none; color:white; margin-left:20px; cursor:pointer; font-weight:bold; font-size: 1rem; vertical-align: middle;">✕</button>
+    </div>
+
     <div class="container">
         <!-- Premium Header Area -->
         <header>
@@ -979,8 +986,9 @@
             </div>
         </div>
 
-        <footer data-i18n="footer_text">
-            Trilingual Edition (English / Bahasa Melayu / 中文) · MyKad NRIC automatic place-of-birth & gender extraction system.
+        <footer style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 16px 0; border-top: 1px solid var(--slate-200); margin-top: 30px;">
+            <span data-i18n="footer_text">Trilingual Edition (English / Bahasa Melayu / 中文) · MyKad NRIC automatic place-of-birth & gender extraction system.</span>
+            <span id="appVersionBadge" style="font-size: 0.72rem; color: var(--slate-400); font-weight: 700; background: var(--slate-100); padding: 4px 10px; border-radius: 20px;">v1.0.0</span>
         </footer>
     </div>
 
@@ -1152,6 +1160,7 @@
     </div>
 
     <script>
+        const APP_VERSION = "1.0.0";
         // ----------------------------- Trilingual Translation Dictionary -----------------------------
         const LANGUAGES = {
             en: {
@@ -2079,7 +2088,8 @@
                         idNumber: formatMyKad(cleanedMyKad), 
                         address: address.trim(),
                         familyRole: familyRole,
-                        familyHeadId: familyRole === 'member' ? familyHeadId : ""
+                        familyHeadId: familyRole === 'member' ? familyHeadId : "",
+                        updatedAt: new Date().toISOString()
                     };
                 }
                 showToast(t("form_title"), t("toast_success_update"), "success");
@@ -2098,7 +2108,8 @@
                     address: address.trim(),
                     familyRole: familyRole,
                     familyHeadId: familyRole === 'member' ? familyHeadId : "",
-                    donationHistory: []
+                    donationHistory: [],
+                    updatedAt: new Date().toISOString()
                 });
                 showToast(t("form_title"), t("toast_success_add"), "success");
             }
@@ -2180,8 +2191,20 @@
                     residents.forEach(r => {
                         if (r.familyHeadId === id) {
                             r.familyHeadId = "";
+                            r.updatedAt = new Date().toISOString();
                         }
                     });
+                }
+                
+                // Track deleted resident ID
+                try {
+                    const deletedResIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
+                    if (!deletedResIds.includes(id)) {
+                        deletedResIds.push(id);
+                        localStorage.setItem('deleted_resident_ids', JSON.stringify(deletedResIds));
+                    }
+                } catch (e) {
+                    console.error("Failed to update deleted_resident_ids", e);
                 }
                 
                 residents = residents.filter(r => r.id !== id);
@@ -2375,6 +2398,136 @@
             }
         }
 
+        // Helper to construct the unified sync payload
+        function getSyncPayload() {
+            const payload = [...residents];
+            const deletedResidentIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
+            const deletedCampaignIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
+            
+            payload.push({
+                id: "METADATA_CAMPAIGNS",
+                campaigns: campaigns,
+                activeCampaignId: activeCampaignId,
+                deletedResidentIds: deletedResidentIds,
+                deletedCampaignIds: deletedCampaignIds
+            });
+            return JSON.stringify(payload);
+        }
+
+        // Helper to perform the 2-way merge of cloud data and local data
+        function mergeAndApplyCloudData(cloudData) {
+            if (!Array.isArray(cloudData)) return false;
+            
+            let cloudResidents = [];
+            let cloudCampaigns = [];
+            let cloudActiveCampaignId = "";
+            let cloudDeletedResidentIds = [];
+            let cloudDeletedCampaignIds = [];
+            
+            const metaIndex = cloudData.findIndex(r => r && r.id === "METADATA_CAMPAIGNS");
+            if (metaIndex !== -1) {
+                const meta = cloudData[metaIndex];
+                cloudCampaigns = meta.campaigns || [];
+                cloudActiveCampaignId = meta.activeCampaignId || "";
+                cloudDeletedResidentIds = meta.deletedResidentIds || [];
+                cloudDeletedCampaignIds = meta.deletedCampaignIds || [];
+                cloudResidents = cloudData.filter((r, idx) => idx !== metaIndex);
+            } else {
+                cloudResidents = cloudData;
+            }
+            
+            // 1. Merge Deleted registers
+            const localDeletedResIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
+            const mergedDeletedResIds = Array.from(new Set([...localDeletedResIds, ...cloudDeletedResidentIds]));
+            localStorage.setItem('deleted_resident_ids', JSON.stringify(mergedDeletedResIds));
+            const deletedResSet = new Set(mergedDeletedResIds);
+            
+            const localDeletedCampIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
+            const mergedDeletedCampIds = Array.from(new Set([...localDeletedCampIds, ...cloudDeletedCampaignIds]));
+            localStorage.setItem('deleted_campaign_ids', JSON.stringify(mergedDeletedCampIds));
+            const deletedCampSet = new Set(mergedDeletedCampIds);
+            
+            // 2. Merge Residents
+            const mergedResidentsMap = new Map();
+            
+            // Add cloud residents first
+            cloudResidents.forEach(r => {
+                if (r && r.id && !deletedResSet.has(r.id)) {
+                    mergedResidentsMap.set(r.id, r);
+                }
+            });
+            
+            // Overwrite/merge with local residents
+            residents.forEach(r => {
+                if (r && r.id && !deletedResSet.has(r.id)) {
+                    const existing = mergedResidentsMap.get(r.id);
+                    if (!existing) {
+                        mergedResidentsMap.set(r.id, r);
+                    } else {
+                        const localTime = new Date(r.updatedAt || 0).getTime();
+                        const cloudTime = new Date(existing.updatedAt || 0).getTime();
+                        // If local is newer or same time, keep local; otherwise cloud
+                        if (localTime >= cloudTime) {
+                            mergedResidentsMap.set(r.id, r);
+                        }
+                    }
+                }
+            });
+            
+            residents = Array.from(mergedResidentsMap.values());
+            
+            // 3. Merge Campaigns
+            const mergedCampaignsMap = new Map();
+            
+            cloudCampaigns.forEach(c => {
+                if (c && c.id && !deletedCampSet.has(c.id)) {
+                    mergedCampaignsMap.set(c.id, c);
+                }
+            });
+            
+            campaigns.forEach(c => {
+                if (c && c.id && !deletedCampSet.has(c.id)) {
+                    const existing = mergedCampaignsMap.get(c.id);
+                    if (!existing) {
+                        mergedCampaignsMap.set(c.id, c);
+                    } else {
+                        const mergedItems = Array.from(new Set([
+                            ...(existing.items || []).map(it => it.trim()),
+                            ...(c.items || []).map(it => it.trim())
+                        ]));
+                        mergedCampaignsMap.set(c.id, {
+                            ...existing,
+                            items: mergedItems
+                        });
+                    }
+                }
+            });
+            
+            campaigns = Array.from(mergedCampaignsMap.values());
+            if (campaigns.length === 0) {
+                // If campaigns list becomes completely empty due to deletion, recreate a default campaign
+                campaigns = [{
+                    id: "default_campaign",
+                    name: "General Census Campaign",
+                    items: ["Rice", "Cooking Oil", "Sugar", "Flour"]
+                }];
+            }
+            
+            localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
+            
+            // 4. Set Active Campaign
+            let newActiveCampaignId = activeCampaignId;
+            if (cloudActiveCampaignId && campaigns.some(c => c.id === cloudActiveCampaignId)) {
+                newActiveCampaignId = cloudActiveCampaignId;
+            } else if (!campaigns.some(c => c.id === newActiveCampaignId)) {
+                newActiveCampaignId = campaigns[0].id;
+            }
+            activeCampaignId = newActiveCampaignId;
+            localStorage.setItem('active_campaign_id', activeCampaignId);
+            
+            return true;
+        }
+
         // Debounced Background Auto-Sync
         let autoSyncTimer = null;
         function triggerAutoSync() {
@@ -2408,12 +2561,33 @@
                     return;
                 }
                 try {
+                    // Fetch existing cloud data first
+                    let cloudData = [];
+                    try {
+                        const fetchResponse = await fetch(url);
+                        if (fetchResponse.ok) {
+                            cloudData = await fetchResponse.json();
+                        }
+                    } catch (e) {
+                        console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
+                    }
+
+                    if (Array.isArray(cloudData) && cloudData.length > 0) {
+                        const merged = mergeAndApplyCloudData(cloudData);
+                        if (merged) {
+                            await localforage.setItem('residents_data', residents);
+                            renderCampaignSelector();
+                            updateDashboard();
+                            applyFilters();
+                        }
+                    }
+
                     const response = await fetch(url, {
                         method: 'POST',
                         mode: 'cors',
                         redirect: 'follow',
                         headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify(residents)
+                        body: getSyncPayload()
                     });
                     if (response.ok) {
                         showToast(t("btn_sync"), localStorage.getItem('app_language') === 'zh' ? '修改已自动同步到 Google 表格。' : (localStorage.getItem('app_language') === 'ms' ? 'Perubahan disimpan ke Google Sheets.' : 'Changes saved silently to Google Sheets.'), "success");
@@ -2425,10 +2599,31 @@
                 const syncKey = getOrCreateSyncKey();
                 const bucketId = "7qW5hJ6mK8pL9sN2vR3xYt";
                 try {
+                    // Fetch existing cloud data first
+                    let cloudData = [];
+                    try {
+                        const fetchResponse = await fetch(`https://kvdb.io/${bucketId}/${syncKey}`);
+                        if (fetchResponse.ok) {
+                            cloudData = await fetchResponse.json();
+                        }
+                    } catch (e) {
+                        console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
+                    }
+
+                    if (Array.isArray(cloudData) && cloudData.length > 0) {
+                        const merged = mergeAndApplyCloudData(cloudData);
+                        if (merged) {
+                            await localforage.setItem('residents_data', residents);
+                            renderCampaignSelector();
+                            updateDashboard();
+                            applyFilters();
+                        }
+                    }
+
                     await fetch(`https://kvdb.io/${bucketId}/${syncKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(residents)
+                        body: getSyncPayload()
                     });
                 } catch (err) {
                     console.error("Auto sync error:", err);
@@ -2442,13 +2637,15 @@
             const engine = localStorage.getItem('sync_engine') || 'kvdb';
             const syncBtn = document.getElementById("syncToCloudBtn");
             const originalHTML = syncBtn.innerHTML;
+            const lang = localStorage.getItem('app_language') || 'en';
             
             // Safety confirmation for empty database sync
             if (residents.length === 0) {
-                const lang = localStorage.getItem('app_language') || 'en';
-                const emptyConfirmMsg = lang === 'zh' ? "⚠️ 警告：您本地的普查数据库目前为空。同步到云端将清空您云端/Google 表格中的所有记录。确定要继续清空吗？" :
-                    (lang === 'ms' ? "⚠️ AMARAN: Pangkalan data tempatan anda kosong. Menyelaras ke awan akan memadam semua rekod dalam Google Sheets anda. Adakah anda pasti?" :
-                    "⚠️ WARNING: Your local database is empty. Syncing to the cloud will clear all records in your Google Sheets. Are you sure you want to proceed?");
+                const emptyConfirmMsg = lang === 'zh' ? 
+                    "⚠️ 警告：您本地的普查数据库为空。\n\n• 如果这台设备是【新设备】：点击“确定”将从云端下载您的所有普查数据。\n• 如果您确定要【清空云端的所有数据】：请在点击“确定”后的下一个提示中输入 CLEAR。" :
+                    (lang === 'ms' ? 
+                    "⚠️ AMARAN: Pangkalan data tempatan anda kosong.\n\n• Jika peranti ini adalah [Peranti Baru]: Klik 'OK' untuk memuat turun data dari awan.\n• Jika anda mahu [MEMADAM semua data di awan]: Sila taip CLEAR pada pengesahan seterusnya." :
+                    "⚠️ WARNING: Your local database is empty.\n\n• If this is a [New Device]: Click 'OK' to download your existing data from the cloud.\n• If you want to [DELETE all cloud data]: You will need to type CLEAR in the next prompt.");
                 if (!confirm(emptyConfirmMsg)) {
                     return;
                 }
@@ -2464,29 +2661,113 @@
                         throw new Error(localStorage.getItem('app_language') === 'zh' ? "尚未配置 Google 表格 API URL。请点击设置(⚙️)进行配置。" : "Google Web App URL is not configured. Go to Settings (⚙️) to set it up.");
                     }
                     
+                    // 1. Fetch current cloud data
+                    let cloudData = [];
+                    let fetchSuccess = false;
+                    try {
+                        const fetchResponse = await fetch(url);
+                        if (fetchResponse.ok) {
+                            cloudData = await fetchResponse.json();
+                            fetchSuccess = true;
+                        }
+                    } catch (e) {
+                        console.warn("Failed to fetch current cloud data. Proceeding...", e);
+                    }
+                    
+                    // 2. Handle empty local database safety check
+                    if (residents.length === 0) {
+                        if (fetchSuccess && Array.isArray(cloudData) && cloudData.length > 0) {
+                            mergeAndApplyCloudData(cloudData);
+                            await persistData();
+                            showToast(t("btn_sync"), lang === 'zh' ? "成功从云端下载并恢复了您的数据！" : (lang === 'ms' ? "Berjaya memuat turun dan memulihkan data anda dari awan!" : "Successfully downloaded and restored your data from the cloud!"), "success");
+                            renderCampaignSelector();
+                            updateSyncStatusUI();
+                            return;
+                        } else {
+                            const confirmClear = prompt(lang === 'zh' ? "⚠️ 未检测到任何云端数据（或连接失败）。如果您确实要将空白数据推送到云端（这将清空您的 Google 表格数据！），请在下方输入大写字母 CLEAR 并点击确定：" :
+                                (lang === 'ms' ? "⚠️ Tiada data awan dikesan (atau gagal disambung). Jika anda mahu menghantar data kosong ke awan (ini akan MEMADAM semua rekod di Google Sheets), sila taip huruf besar CLEAR:" :
+                                "⚠️ No cloud data detected (or connection failed). If you want to push empty data to the cloud (which will CLEAR all existing records in Google Sheets), type CLEAR in all caps:"));
+                            if (confirmClear !== "CLEAR") {
+                                throw new Error(lang === 'zh' ? "同步已取消，已保护云端数据未被清空。" : "Sync cancelled. Cloud data protected from overwrite.");
+                            }
+                        }
+                    }
+                    
+                    // 3. Perform 2-way merge (for non-empty local)
+                    if (residents.length > 0 && Array.isArray(cloudData) && cloudData.length > 0) {
+                        mergeAndApplyCloudData(cloudData);
+                    }
+                    
+                    // 4. Write merged database locally
+                    await persistData();
+                    
+                    // 5. Push merged database back to Google Sheets
                     const response = await fetch(url, {
                         method: 'POST',
                         mode: 'cors',
                         redirect: 'follow',
                         headers: { 'Content-Type': 'text/plain' },
-                        body: JSON.stringify(residents)
+                        body: getSyncPayload()
                     });
                     
                     if (!response.ok) throw new Error("Google Sheets server failed to process request.");
-                    showToast(t("btn_sync"), localStorage.getItem('app_language') === 'zh' ? "普查数据库已成功推送到您的 Google 表格！" : (localStorage.getItem('app_language') === 'ms' ? "Pangkalan data banci berjaya disimpan ke Google Sheets!" : "Census database successfully pushed to your Google Sheet!"), "success");
+                    showToast(t("btn_sync"), localStorage.getItem('app_language') === 'zh' ? "普查数据库已成功进行双向合并同步！" : (localStorage.getItem('app_language') === 'ms' ? "Pangkalan data banci berjaya diselaraskan secara dua hala!" : "Census database successfully synchronized 2-way with Google Sheet!"), "success");
                 } else {
                     const syncKey = getOrCreateSyncKey();
                     const bucketId = "7qW5hJ6mK8pL9sN2vR3xYt";
+                    
+                    // 1. Fetch current cloud data
+                    let cloudData = [];
+                    let fetchSuccess = false;
+                    try {
+                        const fetchResponse = await fetch(`https://kvdb.io/${bucketId}/${syncKey}`);
+                        if (fetchResponse.ok) {
+                            cloudData = await fetchResponse.json();
+                            fetchSuccess = true;
+                        }
+                    } catch (e) {
+                        console.warn("Failed to fetch KVdb data. Proceeding...", e);
+                    }
+                    
+                    // 2. Handle empty local database safety check
+                    if (residents.length === 0) {
+                        if (fetchSuccess && Array.isArray(cloudData) && cloudData.length > 0) {
+                            mergeAndApplyCloudData(cloudData);
+                            await persistData();
+                            showToast(t("btn_sync"), lang === 'zh' ? "成功从云端下载并恢复了您的数据！" : (lang === 'ms' ? "Berjaya memuat turun dan memulihkan data anda dari awan!" : "Successfully downloaded and restored your data from the cloud!"), "success");
+                            renderCampaignSelector();
+                            updateSyncStatusUI();
+                            return;
+                        } else {
+                            const confirmClear = prompt(lang === 'zh' ? "⚠️ 未检测到任何云端数据（或连接失败）。如果您确实要将空白数据推送到云端（这将清空云端备份！），请在下方输入大写字母 CLEAR 并点击确定：" :
+                                (lang === 'ms' ? "⚠️ Tiada data awan dikesan (atau gagal disambung). Jika anda mahu menghantar data kosong ke awan (ini akan MEMADAM semua rekod), sila taip huruf besar CLEAR:" :
+                                "⚠️ No cloud data detected (or connection failed). If you want to push empty data to the cloud (which will CLEAR all existing records), type CLEAR in all caps:"));
+                            if (confirmClear !== "CLEAR") {
+                                throw new Error(lang === 'zh' ? "同步已取消，已保护云端数据未被清空。" : "Sync cancelled. Cloud data protected from overwrite.");
+                            }
+                        }
+                    }
+                    
+                    // 3. Perform 2-way merge (for non-empty local)
+                    if (residents.length > 0 && Array.isArray(cloudData) && cloudData.length > 0) {
+                        mergeAndApplyCloudData(cloudData);
+                    }
+                    
+                    // 4. Write merged database locally
+                    await persistData();
+                    
+                    // 5. Push back to cloud
                     const response = await fetch(`https://kvdb.io/${bucketId}/${syncKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(residents)
+                        body: getSyncPayload()
                     });
                     
                     if (!response.ok) throw new Error("Sync server failed to save data.");
                     showToast(t("btn_sync"), t("toast_sync_success"), "success");
                 }
                 
+                renderCampaignSelector();
                 updateSyncStatusUI();
             } catch (err) {
                 console.error(err);
@@ -2508,9 +2789,9 @@
                     return;
                 }
                 
-                const confirmMsg = lang === 'zh' ? "确定要从 Google 表格拉取最新数据吗？这将会完全覆盖您本地当前的数据库。" :
-                    (lang === 'ms' ? "Pulih data dari Google Sheets? Ini akan menggantikan sepenuhnya pangkalan data tempatan anda." :
-                    "Pull latest data from Google Sheets? This will completely replace your current local database.");
+                const confirmMsg = lang === 'zh' ? "确定要从 Google 表格拉取并双向合并数据吗？" :
+                    (lang === 'ms' ? "Pulih dan gabung data dari Google Sheets? Pangkalan data anda akan digabungkan secara pintar." :
+                    "Pull and 2-way merge latest data from Google Sheets?");
                 
                 if (confirm(confirmMsg)) {
                     const restoreBtn = document.getElementById("restoreFromCloudBtn");
@@ -2525,18 +2806,21 @@
                         
                         const cloudData = await response.json();
                         if (Array.isArray(cloudData)) {
-                            if (cloudData.length === 0) {
-                                const confirmEmpty = lang === 'zh' ? "⚠️ 云端数据库为空。从云端恢复将清空您本地所有的普查记录。确定要继续吗？" :
-                                    (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Memulihkan dari awan akan memadamkan semua rekod tempatan anda. Teruskan?" :
-                                    "⚠️ The cloud database is empty. Restoring from cloud will clear all your local census records. Do you want to proceed?");
+                            const cloudRecordCount = cloudData.filter(r => r && r.id !== "METADATA_CAMPAIGNS").length;
+                            if (cloudRecordCount === 0) {
+                                const confirmEmpty = lang === 'zh' ? "⚠️ 云端备份为空。这不会覆盖本地数据，但没有数据可供合并。确定要继续吗？" :
+                                    (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Tiada data untuk digabungkan. Teruskan?" :
+                                    "⚠️ The cloud database is empty. No data is available to merge. Do you want to proceed?");
                                 if (!confirm(confirmEmpty)) {
                                     return;
                                 }
                             }
-                            residents = cloudData;
+                            
+                            mergeAndApplyCloudData(cloudData);
                             await persistData();
                             clearForm();
-                            showToast(t("btn_restore"), lang === 'zh' ? `成功从 Google 表格拉取并恢复了 ${cloudData.length} 条记录！` : (lang === 'ms' ? `Berjaya memulihkan ${cloudData.length} rekod dari Google Sheets!` : `Successfully loaded ${cloudData.length} records from Google Sheets!`), "success");
+                            renderCampaignSelector();
+                            showToast(t("btn_restore"), lang === 'zh' ? `成功与 Google 表格合并了 ${cloudRecordCount} 条记录！` : (lang === 'ms' ? `Berjaya menggabungkan ${cloudRecordCount} rekod dari Google Sheets!` : `Successfully merged ${cloudRecordCount} records from Google Sheets!`), "success");
                         } else {
                             throw new Error("Invalid remote database schema returned.");
                         }
@@ -2839,6 +3123,7 @@
                 claimed: modalClaimedItems.length > 0,
                 items: modalClaimedItems
             });
+            resident.updatedAt = new Date().toISOString();
             
             await persistData();
             donationModal.style.display = "none";
@@ -2898,25 +3183,27 @@
 
                 const cloudData = await response.json();
                 if (Array.isArray(cloudData)) {
-                    if (cloudData.length === 0) {
-                        const confirmEmpty = lang === 'zh' ? "⚠️ 云端备份为空。从云端恢复将清空您本地所有的普查记录。确定要继续吗？" :
-                            (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Memulihkan dari awan akan memadamkan semua rekod tempatan anda. Teruskan?" :
-                            "⚠️ The cloud database is empty. Restoring from cloud will clear all your local census records. Do you want to proceed?");
+                    const cloudRecordCount = cloudData.filter(r => r && r.id !== "METADATA_CAMPAIGNS").length;
+                    if (cloudRecordCount === 0) {
+                        const confirmEmpty = lang === 'zh' ? "⚠️ 云端备份为空。这不会覆盖本地数据，但没有数据可供合并。确定要继续吗？" :
+                            (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Tiada data untuk digabungkan. Teruskan?" :
+                            "⚠️ The cloud database is empty. No data is available to merge. Do you want to proceed?");
                         if (!confirm(confirmEmpty)) {
                             return;
                         }
                     }
-                    const overwriteConfirm = lang === 'zh' ? `已找到数据！成功拉取 ${cloudData.length} 条记录。要覆盖您本地当前的数据吗？` :
-                        (lang === 'ms' ? `Data ditemui! Memulihkan ${cloudData.length} rekod. Gantikan data tempatan anda?` :
-                        `Data found! Retrieved ${cloudData.length} records from cloud. Overwrite your current local data?`);
+                    const overwriteConfirm = lang === 'zh' ? `已找到数据！成功拉取 ${cloudRecordCount} 条记录。要合并到您本地当前的数据吗？` :
+                        (lang === 'ms' ? `Data ditemui! Memulihkan ${cloudRecordCount} rekod. Gabung dengan data tempatan anda?` :
+                        `Data found! Retrieved ${cloudRecordCount} records from cloud. Merge with your current local data?`);
                     
                     if (confirm(overwriteConfirm)) {
-                        residents = cloudData;
+                        mergeAndApplyCloudData(cloudData);
                         localStorage.setItem('cloud_sync_key', enteredKey);
                         
                         await persistData();
                         clearForm();
                         closeCloudModal();
+                        renderCampaignSelector();
                         showToast(t("btn_restore"), t("toast_restore_success"), "success");
                     }
                 } else {
@@ -3500,12 +3787,27 @@
             if (confirm(confirmMsg)) {
                 const deletedCampaignId = activeCampaignId;
                 
+                // Track deleted campaign ID
+                try {
+                    const deletedCampIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
+                    if (!deletedCampIds.includes(deletedCampaignId)) {
+                        deletedCampIds.push(deletedCampaignId);
+                        localStorage.setItem('deleted_campaign_ids', JSON.stringify(deletedCampIds));
+                    }
+                } catch (e) {
+                    console.error("Failed to update deleted_campaign_ids", e);
+                }
+                
                 campaigns = campaigns.filter(c => c.id !== deletedCampaignId);
                 localStorage.setItem('census_campaigns', JSON.stringify(campaigns));
                 
                 residents.forEach(r => {
                     if (r.donationHistory) {
+                        const origLen = r.donationHistory.length;
                         r.donationHistory = r.donationHistory.filter(h => h.campaignId !== deletedCampaignId);
+                        if (r.donationHistory.length !== origLen) {
+                            r.updatedAt = new Date().toISOString();
+                        }
                     }
                 });
                 
@@ -3522,8 +3824,64 @@
             }
         });
 
+        // Auto-update checking logic
+        function isNewerVersion(current, latest) {
+            const cParts = current.split('.').map(Number);
+            const lParts = latest.split('.').map(Number);
+            for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
+                const cVal = cParts[i] || 0;
+                const lVal = lParts[i] || 0;
+                if (lVal > cVal) return true;
+                if (cVal > lVal) return false;
+            }
+            return false;
+        }
+
+        async function checkForUpdates() {
+            // Set local version badge
+            const badge = document.getElementById("appVersionBadge");
+            if (badge) badge.textContent = `v${APP_VERSION}`;
+            
+            try {
+                // Fetch latest version from GitHub repository
+                const response = await fetch("https://raw.githubusercontent.com/hexon1129/Census/main/version.json");
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.version) {
+                        if (isNewerVersion(APP_VERSION, data.version)) {
+                            showUpdateBanner(data.version, data.downloadUrl || "https://github.com/hexon1129/Census");
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("Failed to check for updates:", err);
+            }
+        }
+
+        function showUpdateBanner(version, downloadUrl) {
+            const banner = document.getElementById("updateBanner");
+            const btn = document.getElementById("downloadUpdateBtn");
+            const lang = localStorage.getItem('app_language') || 'en';
+            
+            const text = lang === 'zh' ? `🚀 检测到新版本 v${version}！` :
+                (lang === 'ms' ? `🚀 Versi baru v${version} telah tersedia!` :
+                `🚀 A new version v${version} is available!`);
+                
+            const btnText = lang === 'zh' ? "立即下载" :
+                (lang === 'ms' ? "Muat Turun Sekarang" :
+                "Download Now");
+                
+            document.getElementById("updateBannerText").textContent = text;
+            btn.textContent = btnText;
+            btn.href = downloadUrl;
+            banner.style.display = "block";
+        }
+
         // 8. System self-check and boot
-        window.addEventListener("DOMContentLoaded", loadData);
+        window.addEventListener("DOMContentLoaded", () => {
+            loadData();
+            checkForUpdates();
+        });
     </script>
 </body>
 
