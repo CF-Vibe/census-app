@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="app-version" content="1.0.2">
+    <meta name="app-version" content="1.0.3">
     <title>Malaysia Census System - Digital Management Center</title>
     <!-- Modern Typography: Inter & Outfit -->
     <link
@@ -978,7 +978,8 @@
 
                         <!-- Household Modeling Form Sections -->
                         <div class="input-group">
-                            <label for="race" id="label_race" data-i18n="label_race"><i class="fas fa-fingerprint"></i> Race / Ethnicity *</label>
+                            <label for="race" id="label_race" data-i18n="label_race"><i class="fas fa-fingerprint"></i>
+                                Race / Ethnicity *</label>
                             <select id="race" required>
                                 <option value="" disabled selected>-- Select --</option>
                                 <option value="Malay" data-i18n="opt_race_malay">Malay</option>
@@ -4094,9 +4095,9 @@
                 } else {
                     // For offline local file users, we download the actual HTML file
                     showToast("System", lang === 'zh' ? "正在下载新版本..." : (lang === 'ms' ? "Memuat turun versi baru..." : "Downloading new version..."), "info");
-                    
+
                     const rawUrl = downloadUrl.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
-                    
+
                     fetch(rawUrl)
                         .then(response => {
                             if (!response.ok) throw new Error("Network response was not ok");
@@ -4112,11 +4113,11 @@
                             a.click();
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
-                            
+
                             setTimeout(() => {
-                                alert(lang === 'zh' ? "✅ 下载完成！请在您的“下载”文件夹中打开新版本的 HTML 文件。" : 
-                                     (lang === 'ms' ? "✅ Muat turun selesai! Sila buka fail HTML versi baru di folder Muat Turun anda." : 
-                                     "✅ Download completed! Please open the new HTML file in your Downloads folder."));
+                                alert(lang === 'zh' ? "✅ 下载完成！请在您的“下载”文件夹中打开新版本的 HTML 文件。" :
+                                    (lang === 'ms' ? "✅ Muat turun selesai! Sila buka fail HTML versi baru di folder Muat Turun anda." :
+                                        "✅ Download completed! Please open the new HTML file in your Downloads folder."));
                             }, 500);
                         })
                         .catch(err => {
