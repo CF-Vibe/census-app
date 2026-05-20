@@ -3845,12 +3845,12 @@
             
             try {
                 // Fetch latest version from GitHub repository
-                const response = await fetch("https://raw.githubusercontent.com/hexon1129/Census/main/version.json");
+                const response = await fetch("https://raw.githubusercontent.com/CF-Vibe/census-app/main/version.json");
                 if (response.ok) {
                     const data = await response.json();
                     if (data && data.version) {
                         if (isNewerVersion(APP_VERSION, data.version)) {
-                            showUpdateBanner(data.version, data.downloadUrl || "https://github.com/hexon1129/Census");
+                            showUpdateBanner(data.version, data.downloadUrl || "https://github.com/CF-Vibe/census-app");
                         }
                     }
                 }
