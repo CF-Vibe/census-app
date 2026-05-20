@@ -4074,13 +4074,56 @@
 
         function showUpdateBanner(version, downloadUrl) {
             const lang = localStorage.getItem('app_language') || 'en';
+            const isOnline = window.location.protocol.startsWith('http');
 
-            const text = lang === 'zh' ? `🚀 检测到新版本 v${version}！\n\n您想现在下载最新版本吗？` :
-                (lang === 'ms' ? `🚀 Versi baru v${version} telah tersedia!\n\nAdakah anda mahu memuat turun versi terkini sekarang?` :
-                    `🚀 A new version v${version} is available!\n\nWould you like to download the latest version now?`);
+            let text = "";
+            if (isOnline) {
+                text = lang === 'zh' ? `🚀 检测到新版本 v${version}！\n\n新版本已经在服务器上就绪。是否现在刷新页面以应用更新？` :
+                    (lang === 'ms' ? `🚀 Versi baru v${version} telah tersedia!\n\nVersi baru sudah sedia di pelayan. Adakah anda mahu memuat semula halaman untuk mengemaskini?` :
+                        `🚀 A new version v${version} is available!\n\nThe new version is ready on the server. Would you like to refresh the page to update?`);
+            } else {
+                text = lang === 'zh' ? `🚀 检测到新版本 v${version}！\n\n您想现在下载最新版本的离线文件吗？` :
+                    (lang === 'ms' ? `🚀 Versi baru v${version} telah tersedia!\n\nAdakah anda mahu memuat turun fail versi terkini sekarang?` :
+                        `🚀 A new version v${version} is available!\n\nWould you like to download the latest offline file now?`);
+            }
 
             if (confirm(text)) {
-                window.location.href = downloadUrl;
+                if (isOnline) {
+                    // For online website visitors, updating just means refreshing the webpage!
+                    window.location.reload(true);
+                } else {
+                    // For offline local file users, we download the actual HTML file
+                    showToast("System", lang === 'zh' ? "正在下载新版本..." : (lang === 'ms' ? "Memuat turun versi baru..." : "Downloading new version..."), "info");
+                    
+                    const rawUrl = downloadUrl.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
+                    
+                    fetch(rawUrl)
+                        .then(response => {
+                            if (!response.ok) throw new Error("Network response was not ok");
+                            return response.text();
+                        })
+                        .then(html => {
+                            const blob = new Blob([html], { type: 'text/html' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `census_app_v${version}.html`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            
+                            setTimeout(() => {
+                                alert(lang === 'zh' ? "✅ 下载完成！请在您的“下载”文件夹中打开新版本的 HTML 文件。" : 
+                                     (lang === 'ms' ? "✅ Muat turun selesai! Sila buka fail HTML versi baru di folder Muat Turun anda." : 
+                                     "✅ Download completed! Please open the new HTML file in your Downloads folder."));
+                            }, 500);
+                        })
+                        .catch(err => {
+                            console.error("Direct download failed", err);
+                            window.open("https://github.com/CF-Vibe/census-app", "_blank");
+                        });
+                }
             }
         }
 
