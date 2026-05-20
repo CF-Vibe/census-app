@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="app-version" content="1.0.4">
+    <meta name="app-version" content="1.0.5">
     <title>Malaysia Census System - Digital Management Center</title>
     <!-- Modern Typography: Inter & Outfit -->
     <link
@@ -2515,29 +2515,51 @@
 
                 // Donation Claim Badges
                 let donationBadge = "";
+                let ownClaims = [];
                 if (isClaimedInCurrentCampaign(rec)) {
                     const entry = getResidentCampaignEntry(rec, activeCampaignId);
-                    let items = [];
                     if (entry) {
                         if (entry.items && Array.isArray(entry.items)) {
-                            items = entry.items.map(it => it.name || it.donationItem);
+                            ownClaims = entry.items.map(it => it.name || it.donationItem);
                         } else if (entry.donationItem || entry.item) {
-                            items = [entry.donationItem || entry.item];
+                            ownClaims = [entry.donationItem || entry.item];
                         }
                     }
-                    if (items.length === 0) items = ["Aid Pack"];
-
-                    donationBadge = items.map(itemName =>
-                        `<span class="badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;"><i class="fas fa-gift" style="margin-right: 4px;"></i> ${escapeHtml(itemName)}</span>`
-                    ).join("");
-                } else {
-                    // Check if anyone else in their family has already claimed to warn volunteers
-                    const claimant = checkDoubleClaim(rec.id, rec.familyRole, rec.familyHeadId);
-                    if (claimant) {
-                        const dcText = lang === 'zh' ? '防重警报：同户已领' : (lang === 'ms' ? 'Amaran: Ahli Serumah Dah Tuntut' : 'Alert: Family Claimed');
-                        donationBadge = `<span class="badge" style="background: #fffbeb; color: #b45309; border-color: #fde68a; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;" title="Claimed by ${claimant.name}"><i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i> ${dcText}</span>`;
-                    }
+                    if (ownClaims.length === 0) ownClaims = ["Aid Pack"];
                 }
+
+                const familyClaimObjs = getHouseholdClaimsInCurrentCampaign(rec.id, rec.familyRole, rec.familyHeadId);
+                const familyClaims = [...new Set(familyClaimObjs.map(c => c.itemName))];
+                
+                const currentCampaign = campaigns.find(c => c.id === activeCampaignId);
+                const campaignItems = currentCampaign ? (currentCampaign.items || []) : [];
+                const totalQuota = campaignItems.length > 0 ? campaignItems.length : 1;
+                
+                const allHouseholdClaims = [...new Set([...ownClaims, ...familyClaims])];
+                const isFullyClaimed = allHouseholdClaims.length >= totalQuota && totalQuota > 0;
+
+                // Build HTML
+                let badgeHtml = "";
+                
+                // 1. Own Claims (Green)
+                ownClaims.forEach(itemName => {
+                    badgeHtml += `<span class="badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;"><i class="fas fa-gift" style="margin-right: 4px;"></i> ${escapeHtml(itemName)}</span>`;
+                });
+
+                if (isFullyClaimed && familyClaims.length > 0) {
+                    // 2. Fully Claimed by Family (Red Alert)
+                    const fullyClaimedText = lang === 'zh' ? '全家配额已满' : (lang === 'ms' ? 'Kuota Keluarga Penuh' : 'Family Quota Reached');
+                    badgeHtml += `<span class="badge" style="background: #fef2f2; color: #b91c1c; border-color: #fecaca; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;" title="All items claimed"><i class="fas fa-ban" style="margin-right: 4px;"></i> ${fullyClaimedText}</span>`;
+                } else if (!isFullyClaimed) {
+                    // 3. Partially Claimed by Family (Orange Alert)
+                    familyClaims.forEach(itemName => {
+                        const familyClaimant = familyClaimObjs.find(c => c.itemName === itemName)?.resident?.name || "Family";
+                        const dcText = lang === 'zh' ? '同户已领: ' : (lang === 'ms' ? 'Keluarga tuntut: ' : 'Family claimed: ');
+                        badgeHtml += `<span class="badge" style="background: #fffbeb; color: #b45309; border-color: #fde68a; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;" title="Claimed by ${familyClaimant}"><i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i> ${dcText}${escapeHtml(itemName)}</span>`;
+                    });
+                }
+                
+                donationBadge = badgeHtml;
 
                 html += `<tr class="fade-in-row">
                         <td>

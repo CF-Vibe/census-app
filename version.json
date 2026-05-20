@@ -1,5 +1,5 @@
 {
-  "version": "1.0.4",
-  "releaseNotes": "Added Household Family Tree visualizer modal",
+  "version": "1.0.5",
+  "releaseNotes": "Improved family claim alert visualizer logic",
   "downloadUrl": "https://github.com/CF-Vibe/census-app/raw/main/index.html"
 }
