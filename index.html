@@ -978,6 +978,17 @@
 
                         <!-- Household Modeling Form Sections -->
                         <div class="input-group">
+                            <label for="race" id="label_race" data-i18n="label_race"><i class="fas fa-fingerprint"></i> Race / Ethnicity *</label>
+                            <select id="race" required>
+                                <option value="" disabled selected>-- Select --</option>
+                                <option value="Malay" data-i18n="opt_race_malay">Malay</option>
+                                <option value="Chinese" data-i18n="opt_race_chinese">Chinese</option>
+                                <option value="Indian" data-i18n="opt_race_indian">Indian</option>
+                                <option value="Others" data-i18n="opt_race_others">Others</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
                             <label for="familyRole" data-i18n="label_family_role"><i class="fas fa-users"></i> Household
                                 Role *</label>
                             <select id="familyRole">
@@ -1080,6 +1091,7 @@
                             <tr>
                                 <th data-i18n="th_name">Name</th>
                                 <th data-i18n="th_phone">Phone</th>
+                                <th data-i18n="th_race">Race</th>
                                 <th style="width: 250px;" data-i18n="th_details">MyKad & Details</th>
                                 <th data-i18n="th_address">Address</th>
                                 <th style="width: 140px;" data-i18n="th_actions">Actions</th>
@@ -1358,6 +1370,11 @@
                 placeholder_phone: "e.g. 012-3456789",
                 label_mykad: "<i class=\"fas fa-id-card\"></i> MyKad / ID Number *",
                 placeholder_mykad: "YYMMDD-PB-###G (12 digits)",
+                label_race: "<i class=\"fas fa-fingerprint\"></i> Race / Ethnicity *",
+                opt_race_malay: "Malay",
+                opt_race_chinese: "Chinese",
+                opt_race_indian: "Indian",
+                opt_race_others: "Others",
                 label_address: "<i class=\"fas fa-map-marker-alt\"></i> Residential Address",
                 placeholder_address: "e.g. No. 12, Jalan Ampang, Kuala Lumpur",
                 btn_add_record: "<i class=\"fas fa-save\"></i> Add Record",
@@ -1374,6 +1391,7 @@
                 opt_all_states: "All States",
                 th_name: "Name",
                 th_phone: "Phone",
+                th_race: "Race",
                 th_details: "MyKad & Details",
                 th_address: "Address",
                 th_actions: "Actions",
@@ -1446,6 +1464,11 @@
                 placeholder_phone: "cth. 012-3456789",
                 label_mykad: "<i class=\"fas fa-id-card\"></i> No. MyKad / Kad Pengenalan *",
                 placeholder_mykad: "YYMMDD-PB-###G (12 digit)",
+                label_race: "<i class=\"fas fa-fingerprint\"></i> Bangsa / Keturunan *",
+                opt_race_malay: "Melayu",
+                opt_race_chinese: "Cina",
+                opt_race_indian: "India",
+                opt_race_others: "Lain-lain",
                 label_address: "<i class=\"fas fa-map-marker-alt\"></i> Alamat Rumah",
                 placeholder_address: "cth. No. 12, Jalan Ampang, Kuala Lumpur",
                 btn_add_record: "<i class=\"fas fa-save\"></i> Tambah Rekod",
@@ -1462,6 +1485,7 @@
                 opt_all_states: "Semua Negeri",
                 th_name: "Nama",
                 th_phone: "Telefon",
+                th_race: "Bangsa",
                 th_details: "MyKad & Butiran",
                 th_address: "Alamat",
                 th_actions: "Tindakan",
@@ -1534,6 +1558,11 @@
                 placeholder_phone: "例如: 012-3456789",
                 label_mykad: "<i class=\"fas fa-id-card\"></i> 身份证号码 (MyKad) *",
                 placeholder_mykad: "YYMMDD-PB-###G (12位数字)",
+                label_race: "<i class=\"fas fa-fingerprint\"></i> 种族 *",
+                opt_race_malay: "巫裔 (马来人)",
+                opt_race_chinese: "华裔 (华人)",
+                opt_race_indian: "印裔 (印度人)",
+                opt_race_others: "其他",
                 label_address: "<i class=\"fas fa-map-marker-alt\"></i> 住宅地址",
                 placeholder_address: "例如: No. 12, Jalan Ampang, Kuala Lumpur",
                 btn_add_record: "<i class=\"fas fa-save\"></i> 登记居民",
@@ -1550,6 +1579,7 @@
                 opt_all_states: "所有州属",
                 th_name: "姓名",
                 th_phone: "电话",
+                th_race: "种族",
                 th_details: "身份证与解析信息",
                 th_address: "地址",
                 th_actions: "操作",
@@ -2236,7 +2266,7 @@
 
         // Add or Edit Census Profile
         function addOrUpdateRecord(recordData) {
-            const { name, phone, idNumber, address, familyRole, familyHeadId } = recordData;
+            const { name, phone, idNumber, race, address, familyRole, familyHeadId } = recordData;
             const cleanedMyKad = idNumber.replace(/\D/g, '');
 
             if (!name.trim() || !cleanedMyKad) {
@@ -2261,6 +2291,7 @@
                         name: name.trim(),
                         phone: phone.trim(),
                         idNumber: formatMyKad(cleanedMyKad),
+                        race: race,
                         address: address.trim(),
                         familyRole: familyRole,
                         familyHeadId: familyRole === 'member' ? familyHeadId : "",
@@ -2280,6 +2311,7 @@
                     name: name.trim(),
                     phone: phone.trim(),
                     idNumber: formatMyKad(cleanedMyKad),
+                    race: race,
                     address: address.trim(),
                     familyRole: familyRole,
                     familyHeadId: familyRole === 'member' ? familyHeadId : "",
@@ -2299,6 +2331,7 @@
             document.getElementById("name").value = "";
             document.getElementById("phone").value = "";
             document.getElementById("idNumber").value = "";
+            document.getElementById("race").value = "";
             document.getElementById("address").value = "";
 
             document.getElementById("idParsedInfo").style.display = "none";
@@ -2326,6 +2359,7 @@
             document.getElementById("name").value = record.name;
             document.getElementById("phone").value = record.phone || "";
             document.getElementById("idNumber").value = record.idNumber;
+            document.getElementById("race").value = record.race || "";
             document.getElementById("address").value = record.address || "";
 
             // Set family role
@@ -2490,6 +2524,9 @@
                         </td>
                         <td>
                             <span style="font-weight: 600; color: var(--slate-700); font-family: monospace;">${escapeHtml(rec.phone || '—')}</span>
+                        </td>
+                        <td>
+                            <span class="badge" style="background: var(--slate-100); color: var(--slate-700); border-color: var(--slate-200); font-weight: 600;">${escapeHtml(rec.race ? (LANGUAGES[lang]['opt_race_' + rec.race.toLowerCase()] || rec.race) : '—')}</span>
                         </td>
                         <td>
                             <div style="font-family: monospace; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.3px; color: var(--slate-800);">${escapeHtml(rec.idNumber)}</div>
@@ -3489,6 +3526,7 @@
                         'Full Name / Nama Penuh / 姓名': r.name,
                         'Phone / Telefon / 电话': r.phone || '—',
                         'MyKad NRIC / 身份证': r.idNumber,
+                        'Race / Bangsa / 种族': r.race ? ((LANGUAGES['en']['opt_race_' + r.race.toLowerCase()] || r.race) + ' / ' + (LANGUAGES['ms']['opt_race_' + r.race.toLowerCase()] || r.race) + ' / ' + (LANGUAGES['zh']['opt_race_' + r.race.toLowerCase()] || r.race)) : '—',
                         'Gender / Jantina / 性别': parsed ? (parsed.gender === 'Male' ? 'Male / Lelaki / 男' : 'Female / Perempuan / 女') : '—',
                         'Age / Umur / 年龄': parsed ? parsed.age : '—',
                         'Birthdate / Tarikh Lahir / 出生日期': parsed ? parsed.birthStr : '—',
@@ -3604,11 +3642,12 @@
             const name = document.getElementById("name").value;
             const phone = document.getElementById("phone").value;
             const idNumber = document.getElementById("idNumber").value;
+            const race = document.getElementById("race").value;
             const address = document.getElementById("address").value;
             const familyRole = document.getElementById("familyRole").value;
             const familyHeadId = document.getElementById("familyHeadId").value;
 
-            addOrUpdateRecord({ name, phone, idNumber, address, familyRole, familyHeadId });
+            addOrUpdateRecord({ name, phone, idNumber, race, address, familyRole, familyHeadId });
         });
 
         // 3. Interactive MyKad Typing and Parser Listener
