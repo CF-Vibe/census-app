@@ -1,5 +1,5 @@
 {
-  "version": "2.0.2",
+  "version": "2.0.3",
   "releaseNotes": "Fix phone format (+60), race label per language, delete propagation across cloud sync, family claim deduplication, quota badge fix",
   "downloadUrl": "https://github.com/CF-Vibe/census-app/raw/main/index.html"
 }
