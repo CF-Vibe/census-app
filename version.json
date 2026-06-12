@@ -1,5 +1,5 @@
 {
-  "version": "1.0.5",
-  "releaseNotes": "Improved family claim alert visualizer logic",
+  "version": "2.0.0",
+  "releaseNotes": "Fix Sync Issue, family members linkage, campaign management, add claimed history",
   "downloadUrl": "https://github.com/CF-Vibe/census-app/raw/main/index.html"
 }

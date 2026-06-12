@@ -65,11 +65,9 @@
         }
 
         .container {
-            max-width: 1440px;
+            width: 100%;
+            padding: 0 20px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 28px;
         }
 
         /* Premium Header */
@@ -88,6 +86,7 @@
             font-weight: 700;
             background: linear-gradient(135deg, var(--slate-900) 30%, var(--primary) 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -0.5px;
         }
@@ -130,9 +129,11 @@
             font-weight: 600;
             color: var(--slate-600);
             border: 1px solid var(--slate-200);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
+            font-family: inherit;
+            line-height: 1.4;
         }
 
         .badge-live {
@@ -234,7 +235,7 @@
 
         @media (min-width: 1024px) {
             .main-layout {
-                grid-template-columns: 400px 1fr;
+                grid-template-columns: 1fr 2fr;
             }
         }
 
@@ -1095,10 +1096,10 @@
                             <tr>
                                 <th data-i18n="th_name">Name</th>
                                 <th data-i18n="th_phone">Phone</th>
-                                <th data-i18n="th_race">Race</th>
-                                <th style="width: 250px;" data-i18n="th_details">MyKad & Details</th>
+                                <th style="min-width: 90px;" data-i18n="th_race">Race</th>
+                                <th data-i18n="th_details">MyKad & Details</th>
                                 <th data-i18n="th_address">Address</th>
-                                <th style="width: 140px;" data-i18n="th_actions">Actions</th>
+                                <th data-i18n="th_actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -1590,9 +1591,9 @@
                 label_mykad: "<i class=\"fas fa-id-card\"></i> 身份证号码 (MyKad) *",
                 placeholder_mykad: "YYMMDD-PB-###G (12位数字)",
                 label_race: "<i class=\"fas fa-fingerprint\"></i> 种族 *",
-                opt_race_malay: "巫裔 (马来人)",
-                opt_race_chinese: "华裔 (华人)",
-                opt_race_indian: "印裔 (印度人)",
+                opt_race_malay: "马来人",
+                opt_race_chinese: "华人",
+                opt_race_indian: "印度人",
                 opt_race_others: "其他",
                 label_address: "<i class=\"fas fa-map-marker-alt\"></i> 住宅地址",
                 placeholder_address: "例如: No. 12, Jalan Ampang, Kuala Lumpur",
@@ -2527,6 +2528,18 @@
                 return;
             }
 
+            function getRaceLabel(raceStr) {
+                if (!raceStr) return '—';
+                const key = raceStr.split(' / ')[0].trim().toLowerCase();
+                return LANGUAGES[lang]['opt_race_' + key] || raceStr.split(' / ')[0].trim();
+            }
+
+            function getRaceLabel(raceStr) {
+                if (!raceStr) return '—';
+                const key = raceStr.split(' / ')[0].trim().toLowerCase();
+                return LANGUAGES[lang]['opt_race_' + key] || raceStr.split(' / ')[0].trim();
+            }
+
             let html = "";
             dataToRender.forEach(rec => {
                 const parsed = parseIdCard(rec.idNumber);
@@ -2571,7 +2584,7 @@
                 }
 
                 const familyClaimObjs = getHouseholdClaimsInCurrentCampaign(rec.id, rec.familyRole, rec.familyHeadId);
-                const familyClaims = [...new Set(familyClaimObjs.map(c => c.itemName).filter(Boolean).filter(name => name !== '—'))];
+                const familyClaims = [...new Set(familyClaimObjs.map(c => c.itemName).filter(Boolean).filter(name => name !== '—'))].filter(name => !ownClaims.some(own => own.toLowerCase() === name.toLowerCase()));
                 
                 const currentCampaign = campaigns.find(c => c.id === activeCampaignId);
                 const campaignItems = currentCampaign ? (currentCampaign.items || []) : [];
@@ -2624,9 +2637,12 @@
                 } else if (familyClaims.length > 0) {
                     // 3. Partially Claimed by Family (Orange Alert)
                     familyClaims.forEach(itemName => {
-                        const familyClaimant = familyClaimObjs.find(c => c.itemName === itemName)?.resident?.name || "Family";
+                        const claimObj = familyClaimObjs.find(c => c.itemName === itemName);
+                        const familyClaimant = claimObj?.resident?.name || "Family";
+                        const claimDate = claimObj?.time ? new Date(claimObj.time).toLocaleString() : "";
                         const dcText = lang === 'zh' ? '同户已领: ' : (lang === 'ms' ? 'Keluarga tuntut: ' : 'Family claimed: ');
-                        badgeHtml += `<span class="badge" style="background: #fffbeb; color: #b45309; border-color: #fde68a; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;" title="Claimed by ${familyClaimant}"><i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i> ${dcText}${escapeHtml(itemName)}</span>`;
+                        const tooltip = claimDate ? `${familyClaimant} (${claimDate})` : familyClaimant;
+                        badgeHtml += `<span class="badge" style="background: #fffbeb; color: #b45309; border-color: #fde68a; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;" title="${escapeHtml(tooltip)}"><i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i> ${dcText}${escapeHtml(itemName)}</span>`;
                     });
                 }
                 
@@ -2641,7 +2657,7 @@
                             <span style="font-weight: 600; color: var(--slate-700); font-family: monospace;">${escapeHtml(rec.phone || '—')}</span>
                         </td>
                         <td>
-                            <span class="badge" style="background: var(--slate-100); color: var(--slate-700); border-color: var(--slate-200); font-weight: 600;">${escapeHtml(rec.race ? (LANGUAGES[lang]['opt_race_' + rec.race.toLowerCase()] || rec.race) : '—')}</span>
+                            <span class="badge" style="background: var(--slate-100); color: var(--slate-700); border-color: var(--slate-200); font-weight: 600;">${escapeHtml(getRaceLabel(rec.race))}</span>
                         </td>
                         <td>
                             <div style="font-family: monospace; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.3px; color: var(--slate-800);">${escapeHtml(rec.idNumber)}</div>
@@ -3383,7 +3399,7 @@
                             `Claimed by self on ${selfDateStr}`);
                     subtextHtml = `<span style="font-size: 0.7rem; color: #16a34a; font-weight: 600;">${claimedBySelfText}</span>`;
                 } else if (isClaimedByFamily) {
-                    const otherDateStr = new Date(doubleClaimInfo.time).toLocaleString();
+                    const otherDateStr = doubleClaimInfo.time ? new Date(doubleClaimInfo.time).toLocaleString() : "Unknown date";
                     const claimantName = doubleClaimInfo.claimant.name;
 
                     const claimedByFamilyText = lang === 'zh' ? `同户家庭成员 ${claimantName} 已于 ${otherDateStr} 领取` :
@@ -3453,21 +3469,19 @@
             const claims = [];
             residents.forEach(r => {
                 if (householdIds.includes(r.id) && r.id !== residentId) {
-                    const entry = getResidentCampaignEntry(r, activeCampaignId);
-                    if (entry) {
-                        let items = [];
-                        if (entry.items && Array.isArray(entry.items)) {
-                            items = entry.items.map(it => it.name || it.donationItem).filter(Boolean).filter(name => name !== '—');
-                        } else if (entry.donationItem || entry.item) {
-                            const raw = entry.donationItem || entry.item;
-                            if (raw && raw !== '—') items = [{ name: raw, time: entry.donationTime || entry.time }];
-                        }
-                        items.forEach(it => {
-                            claims.push({
-                                resident: r,
-                                itemName: it.name || it.donationItem,
-                                time: it.time || it.donationTime
-                            });
+                    const history = r.claimHistory || {};
+                    const entry = history[activeCampaignId];
+                    if (entry && entry.items) {
+                        entry.items.forEach(it => {
+                            const name = (it.name || it.donationItem || '').trim();
+                            const time = it.time || it.donationTime || entry.claimedAt || '';
+                            if (name && name !== '—') {
+                                claims.push({
+                                    resident: r,
+                                    itemName: name,
+                                    time: time
+                                });
+                            }
                         });
                     }
                 }
@@ -3560,7 +3574,7 @@
             const warningCard = document.getElementById("doubleClaimWarningCard");
             const warningText = document.getElementById("doubleClaimWarningText");
 
-            const householdClaims = getHouseholdClaimsInCurrentCampaign(resident.id, resident.familyRole, resident.familyHeadId);
+            const householdClaims = getHouseholdClaimsInCurrentCampaign(resident.id, resident.familyRole, resident.familyHeadId).filter(hc => hc.resident.id !== resident.id);
             if (householdClaims.length > 0) {
                 warningCard.style.display = "block";
 
@@ -3591,14 +3605,18 @@
             if (!resident) return;
 
             const lang = localStorage.getItem('app_language') || 'en';
+            const now = new Date().toISOString();
 
             if (!resident.claimHistory) resident.claimHistory = {};
             resident.claimHistory[activeCampaignId] = {
                 claimed: modalClaimedItems.length > 0,
-                items: modalClaimedItems,
-                claimedAt: new Date().toISOString()
+                items: modalClaimedItems.map(it => ({
+                    name: it.name || it.donationItem,
+                    time: it.time || it.donationTime || now
+                })),
+                claimedAt: now
             };
-            resident.updatedAt = new Date().toISOString();
+            resident.updatedAt = now;
 
             await persistData();
             donationModal.style.display = "none";
