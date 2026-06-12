@@ -23,118 +23,147 @@ This script is designed with a **dual-storage system**:
 Copy and paste the following code:
 
 ```javascript
-// Google Sheets Database Bridge for Census App
-// Deploy this script as a Web App to enable multi-device sync
+const SHEET_NAME = 'CensusData';
+const HEADERS = [
+  'Full Name / Nama Penuh / 姓名',
+  'Phone / Telefon / 电话',
+  'MyKad / ID Number',
+  'Race / Bangsa / 种族',
+  'Gender / Jantina / 性别',
+  'Age / Umur / 年龄',
+  'Birthdate / Tarikh Lahir / 出生日期',
+  'State of Birth / Negeri Kelahiran / 出生州属',
+  'Household Role / Peranan / 户口角色',
+  'Family Head Name / Ketua Keluarga / 所属户主',
+  'Address / Alamat / 住宅地址',
+  'Aid Status / Status Bantuan / 领取状态',
+  'Aid Item / Barang Sumbangan / 物资名称',
+  'Claim Date / Masa Tuntutan / 领取时间',
+  'Family Head ID Number',
+  'Family Member ID Numbers',
+  'Claim History / Sejarah Tuntutan / 领取记录'
+];
+
+function normalizePhone(p) {
+  p = (p || '').toString().trim();
+  if (/^0\d/.test(p)) return '+60' + p.substring(1);
+  if (/^6\d{9,11}$/.test(p)) return '+60' + p;
+  return p;
+}
+
+function normalizeRace(r) {
+  r = (r || '').toString().trim();
+  const key = r.split(' / ')[0].trim().toLowerCase();
+  const map = { malay: 'Malay', chinese: 'Chinese', indian: 'Indian', others: 'Others' };
+  return map[key] || r;
+}
 
 function doGet(e) {
-  var scriptProperties = PropertiesService.getScriptProperties();
-  var rawJson = scriptProperties.getProperty('census_db_json');
-  
-  if (!rawJson) {
-    rawJson = "[]";
+  try {
+    const sheet = getSheet();
+    const data = sheet.getDataRange().getValues();
+    const records = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0] && !row[2]) continue;
+      records.push({
+        id: '',
+        name: row[0] || '',
+        phone: normalizePhone(row[1]),
+        idNumber: row[2] || '',
+        race: normalizeRace(row[3]),
+        gender: row[4] || '',
+        age: row[5] || '',
+        birthdate: row[6] || '',
+        state: row[7] || '',
+        familyRole: (row[8] || 'head').toString().toLowerCase().includes('member') ? 'member' : 'head',
+        familyHeadName: row[9] || '',
+        address: row[10] || '',
+        aidStatus: row[11] || '',
+        aidItem: row[12] || '',
+        claimDate: row[13] || '',
+        familyHeadIdNumber: row[14] || '',
+        familyMemberIdNumbers: row[15] || '',
+        familyHeadId: '',
+        donationHistory: [],
+        claimHistory: (function() { try { return JSON.parse(row[16] || '{}'); } catch(err) { return {}; } })(),
+        updatedAt: new Date().toISOString()
+      });
+    }
+    records.push({
+      id: 'METADATA_CAMPAIGNS',
+      campaigns: [],
+      activeCampaignId: '',
+      deletedResidentIds: [],
+      deletedCampaignIds: [],
+      familyLinkages: []
+    });
+    return ContentService.createTextOutput(JSON.stringify(records)).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
   }
-  
-  return ContentService.createTextOutput(rawJson)
-    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
   try {
-    var rawContents = e.postData.contents;
-    var residents = JSON.parse(rawContents);
-    
-    if (!Array.isArray(residents)) {
-      throw new Error("Invalid payload: data must be a JSON array.");
-    }
-    
-    // 1. Store the raw JSON losslessly in script properties for the next GET request
-    var scriptProperties = PropertiesService.getScriptProperties();
-    scriptProperties.setProperty('census_db_json', rawContents);
-    
-    // 2. Format and write the data into sheet rows for visual display
-    updateSpreadsheet(residents);
-    
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", count: residents.length }))
-      .setMimeType(ContentService.MimeType.JSON);
-      
+    const sheet = getSheet();
+    const payload = JSON.parse(e.postData.contents);
+    if (!Array.isArray(payload)) throw new Error('Expected array');
+    const residents = payload.filter(r => r && r.idNumber && r.name);
+    const allRows = [HEADERS];
+    residents.forEach(r => {
+      allRows.push([
+        r.name || '', normalizePhone(r.phone), r.idNumber || '', normalizeRace(r.race), r.gender || '',
+        r.age || '', r.birthdate || '', r.state || '', r.familyRole || 'head',
+        r.familyHeadName || '', r.address || '', r.aidStatus || 'Unclaimed',
+        r.aidItem || '', r.claimDate || '',
+        r.familyHeadIdNumber || '',
+        r.familyMemberIdNumbers || '',
+        JSON.stringify(r.claimHistory || {})
+      ]);
+    });
+    sheet.clearContents();
+    sheet.getRange(1, 1, allRows.length, HEADERS.length).setValues(allRows);
+    return ContentService.createTextOutput(JSON.stringify({ success: true, count: residents.length })).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
-function updateSpreadsheet(payload) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("CensusData") || ss.getActiveSheet();
-  
-  sheet.clear(); // Clear old content
-  
-  // Set headers
-  var headers = [
-    "Resident ID", 
-    "Name", 
-    "MyKad Number", 
-    "Phone", 
-    "Age", 
-    "Gender", 
-    "Birth State", 
-    "Family Role", 
-    "Family Head ID", 
-    "Address", 
-    "Campaign Claims Summary",
-    "Last Updated"
-  ];
-  
-  sheet.appendRow(headers);
-  
-  // Style headers
-  var headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setFontWeight("bold");
-  headerRange.setBackground("#1e3a8a"); // primary-dark color
-  headerRange.setFontColor("white");
-  headerRange.setHorizontalAlignment("center");
-  
-  // Filter out campaign metadata item from sheet rows
-  var residents = payload.filter(function(r) {
-    return r && r.id !== "METADATA_CAMPAIGNS";
-  });
-  
-  if (residents.length === 0) return;
-  
-  var rows = [];
-  for (var i = 0; i < residents.length; i++) {
-    var r = residents[i];
-    
-    // Create a compact readable string of their claims history
-    var claimsArr = [];
-    if (r.donationHistory && Array.isArray(r.donationHistory)) {
-      r.donationHistory.forEach(function(h) {
-        if (h.claimed && h.items) {
-          var itemsList = h.items.map(function(item) { return item.name; }).join(", ");
-          claimsArr.push(h.campaignId + " (" + itemsList + ")");
-        }
-      });
-    }
-    var claimsSummary = claimsArr.join(" | ");
-    
-    rows.push([
-      r.id || "",
-      r.name || "",
-      r.idNumber || "",
-      r.phone || "",
-      r.age !== undefined ? r.age : "",
-      r.gender || "",
-      r.state || "",
-      r.familyRole || "single",
-      r.familyHeadId || "",
-      r.address || "",
-      claimsSummary,
-      r.updatedAt || new Date().toISOString()
-    ]);
+function getSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow(HEADERS);
+    return sheet;
   }
-  
-  sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
-  sheet.autoResizeColumns(1, headers.length);
+  const currentCols = sheet.getLastColumn();
+  if (currentCols < HEADERS.length) {
+    const fullHeader = HEADERS.slice();
+    while (fullHeader.length < currentCols) fullHeader.unshift('');
+    sheet.getRange(1, 1, 1, Math.max(currentCols, HEADERS.length)).setValues([fullHeader]);
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const existing = sheet.getRange(2, 1, lastRow - 1, currentCols).getValues();
+      const upgraded = existing.map(row => {
+        while (row.length < HEADERS.length) row.push('');
+        return row;
+      });
+      sheet.clearContents();
+      sheet.getRange(1, 1, upgraded.length + 1, HEADERS.length).setValues([HEADERS, ...upgraded]);
+    } else {
+      sheet.clearContents();
+      sheet.appendRow(HEADERS);
+    }
+  } else if (currentCols > HEADERS.length) {
+    sheet.deleteColumns(HEADERS.length + 1, currentCols - HEADERS.length);
+  }
+  const currentHeaders = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  if (JSON.stringify(currentHeaders) !== JSON.stringify(HEADERS)) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  }
+  return sheet;
 }
 ```
 
