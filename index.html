@@ -1802,16 +1802,16 @@
         }
 
         function isClaimedInCurrentCampaign(resident) {
-            if (!resident.donationHistory) return false;
-            const entry = resident.donationHistory.find(h => h.campaignId === activeCampaignId);
+            const history = resident.claimHistory || {};
+            const entry = history[activeCampaignId];
             if (!entry) return false;
             if (entry.items && entry.items.length > 0) return true;
-            return entry.claimed === true || entry.claimed === 'true' || entry.donationClaimed === true || entry.donationClaimed === 'true';
+            return entry.claimed === true || entry.claimed === 'true';
         }
 
         function getResidentCampaignEntry(resident, campaignId) {
-            if (!resident.donationHistory) return null;
-            return resident.donationHistory.find(h => h.campaignId === campaignId) || null;
+            const history = resident.claimHistory || {};
+            return history[campaignId] || null;
         }
 
         function migrateLegacyData() {
@@ -2562,37 +2562,66 @@
                     const entry = getResidentCampaignEntry(rec, activeCampaignId);
                     if (entry) {
                         if (entry.items && Array.isArray(entry.items)) {
-                            ownClaims = entry.items.map(it => it.name || it.donationItem);
+                            ownClaims = entry.items.map(it => it.name || it.donationItem).filter(Boolean).filter(name => name !== '—');
                         } else if (entry.donationItem || entry.item) {
-                            ownClaims = [entry.donationItem || entry.item];
+                            const raw = entry.donationItem || entry.item;
+                            if (raw && raw !== '—') ownClaims = [raw];
                         }
                     }
-                    if (ownClaims.length === 0) ownClaims = ["Aid Pack"];
                 }
 
                 const familyClaimObjs = getHouseholdClaimsInCurrentCampaign(rec.id, rec.familyRole, rec.familyHeadId);
-                const familyClaims = [...new Set(familyClaimObjs.map(c => c.itemName))];
+                const familyClaims = [...new Set(familyClaimObjs.map(c => c.itemName).filter(Boolean).filter(name => name !== '—'))];
                 
                 const currentCampaign = campaigns.find(c => c.id === activeCampaignId);
                 const campaignItems = currentCampaign ? (currentCampaign.items || []) : [];
                 const totalQuota = campaignItems.length > 0 ? campaignItems.length : 1;
-                
-                const allHouseholdClaims = [...new Set([...ownClaims, ...familyClaims])];
+
+                // Compute full household total directly (include ALL members including self)
+                const getHouseholdIds = (r) => {
+                    if (r.familyRole === 'head') {
+                        return residents.filter(m => m.id === r.id || (m.familyRole === 'member' && m.familyHeadId === r.id)).map(m => m.id);
+                    } else if (r.familyRole === 'member' && r.familyHeadId) {
+                        return residents.filter(m => m.id === r.familyHeadId || (m.familyRole === 'member' && m.familyHeadId === r.familyHeadId)).map(m => m.id);
+                    }
+                    return [r.id];
+                };
+
+                const householdIds = getHouseholdIds(rec);
+                const householdClaimSet = new Set();
+                householdIds.forEach(hid => {
+                    const hResident = residents.find(m => m.id === hid);
+                    if (hResident) {
+                        const hEntry = getResidentCampaignEntry(hResident, activeCampaignId);
+                        if (hEntry && hEntry.items) {
+                            hEntry.items.forEach(it => {
+                                const name = (it.name || it.donationItem || '').trim();
+                                if (name && name !== '—') householdClaimSet.add(name);
+                            });
+                        }
+                    }
+                });
+
+                const allHouseholdClaims = [...householdClaimSet];
                 const isFullyClaimed = allHouseholdClaims.length >= totalQuota && totalQuota > 0;
+                console.log('[Quota] resident:', rec.name, 'ownClaims:', ownClaims, 'familyClaims:', familyClaims, 'householdTotal:', allHouseholdClaims.length, 'totalQuota:', totalQuota, 'isFullyClaimed:', isFullyClaimed);
 
                 // Build HTML
                 let badgeHtml = "";
                 
-                // 1. Own Claims (Green)
-                ownClaims.forEach(itemName => {
-                    badgeHtml += `<span class="badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;"><i class="fas fa-gift" style="margin-right: 4px;"></i> ${escapeHtml(itemName)}</span>`;
-                });
+                // 1. Own Claims (Green) - only show if this resident has claims in current campaign
+                if (isClaimedInCurrentCampaign(rec)) {
+                    ownClaims.forEach(itemName => {
+                        if (!itemName || itemName === '—') return;
+                        badgeHtml += `<span class="badge" style="background: #ecfdf5; color: #047857; border-color: #a7f3d0; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;"><i class="fas fa-gift" style="margin-right: 4px;"></i> ${escapeHtml(itemName)}</span>`;
+                    });
+                }
 
-                if (isFullyClaimed && familyClaims.length > 0) {
+                if (isFullyClaimed && (ownClaims.length > 0 || familyClaims.length > 0)) {
                     // 2. Fully Claimed by Family (Red Alert)
                     const fullyClaimedText = lang === 'zh' ? '全家配额已满' : (lang === 'ms' ? 'Kuota Keluarga Penuh' : 'Family Quota Reached');
                     badgeHtml += `<span class="badge" style="background: #fef2f2; color: #b91c1c; border-color: #fecaca; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;" title="All items claimed"><i class="fas fa-ban" style="margin-right: 4px;"></i> ${fullyClaimedText}</span>`;
-                } else if (!isFullyClaimed) {
+                } else if (familyClaims.length > 0) {
                     // 3. Partially Claimed by Family (Orange Alert)
                     familyClaims.forEach(itemName => {
                         const familyClaimant = familyClaimObjs.find(c => c.itemName === itemName)?.resident?.name || "Family";
@@ -2730,6 +2759,7 @@
 
             const enriched = residents.map(r => {
                 const enriched = { ...r };
+
                 if (r.familyRole === 'member' && r.familyHeadId) {
                     const head = residents.find(h => h.id === r.familyHeadId);
                     enriched.familyHeadIdNumber = head ? head.idNumber : '';
@@ -2741,6 +2771,19 @@
                     enriched.familyMemberIdNumbers = members.map(m => m.idNumber).filter(Boolean).join(',');
                 } else {
                     enriched.familyMemberIdNumbers = '';
+                }
+
+                const history = r.claimHistory || {};
+                const currentEntry = history[activeCampaignId];
+                if (currentEntry) {
+                    enriched.aidStatus = currentEntry.claimed ? 'Claimed' : 'Unclaimed';
+                    enriched.claimDate = currentEntry.claimedAt || '';
+                    const items = (currentEntry.items || []).map(it => it.name || it.donationItem).filter(Boolean);
+                    enriched.aidItem = items.join(',');
+                } else {
+                    enriched.aidStatus = 'Unclaimed';
+                    enriched.claimDate = '';
+                    enriched.aidItem = '';
                 }
                 return enriched;
             });
@@ -3371,13 +3414,12 @@
                 if (claimantInfo) {
                     const claimant = claimantInfo.claimant;
                     const lang = localStorage.getItem('app_language') || 'en';
-                    const confirmMsg = lang === 'zh' ? `⚠️ 发现同户重复领取！同户成员 ${claimant.name} 已经领过 [${itemName}]。是否仍要重复发放？` :
-                        (lang === 'ms' ? `⚠️ Tuntutan Berganda Dikesan! Ahli keluarga serumah ${claimant.name} telah menuntut [${itemName}]. Adakah anda mahu meneruskan?` :
-                            `⚠️ Double Claim Warning! Household member ${claimant.name} has already claimed [${itemName}]. Do you still want to issue this?`);
-                    if (!confirm(confirmMsg)) {
-                        renderCampaignItemsSelectionList();
-                        return;
-                    }
+                    const blockedMsg = lang === 'zh' ? `⛔ 同户成员 ${claimant.name} 已经领取了 [${itemName}]，不能重复发放。` :
+                        (lang === 'ms' ? `⛔ Ahli serumah ${claimant.name} telah menuntut [${itemName}]. Tidak boleh tuntutan berganda.` :
+                            `⛔ Household member ${claimant.name} has already claimed [${itemName}]. Double-claim blocked.`);
+                    showToast(t("label_donation_status"), blockedMsg, "warning");
+                    renderCampaignItemsSelectionList();
+                    return;
                 }
 
                 if (!modalClaimedItems.some(it => it.name.trim().toLowerCase() === itemName.trim().toLowerCase())) {
@@ -3415,9 +3457,10 @@
                     if (entry) {
                         let items = [];
                         if (entry.items && Array.isArray(entry.items)) {
-                            items = entry.items;
+                            items = entry.items.map(it => it.name || it.donationItem).filter(Boolean).filter(name => name !== '—');
                         } else if (entry.donationItem || entry.item) {
-                            items = [{ name: entry.donationItem || entry.item, time: entry.donationTime || entry.time }];
+                            const raw = entry.donationItem || entry.item;
+                            if (raw && raw !== '—') items = [{ name: raw, time: entry.donationTime || entry.time }];
                         }
                         items.forEach(it => {
                             claims.push({
@@ -3549,20 +3592,12 @@
 
             const lang = localStorage.getItem('app_language') || 'en';
 
-            // Apply save to donationHistory
-            if (!resident.donationHistory) {
-                resident.donationHistory = [];
-            }
-
-            // Remove existing entry for this campaign
-            resident.donationHistory = resident.donationHistory.filter(h => h.campaignId !== activeCampaignId);
-
-            // Save the items array inside the campaign entry
-            resident.donationHistory.push({
-                campaignId: activeCampaignId,
+            if (!resident.claimHistory) resident.claimHistory = {};
+            resident.claimHistory[activeCampaignId] = {
                 claimed: modalClaimedItems.length > 0,
-                items: modalClaimedItems
-            });
+                items: modalClaimedItems,
+                claimedAt: new Date().toISOString()
+            };
             resident.updatedAt = new Date().toISOString();
 
             await persistData();
