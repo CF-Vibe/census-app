@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.0.1",
   "releaseNotes": "Fix Sync Issue, family members linkage, campaign management, add claimed history",
   "downloadUrl": "https://github.com/CF-Vibe/census-app/raw/main/index.html"
 }

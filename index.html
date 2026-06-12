@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="app-version" content="1.0.5">
+    <meta name="app-version" content="2.0.1">
     <title>Malaysia Census System - Digital Management Center</title>
     <!-- Modern Typography: Inter & Outfit -->
     <link
@@ -1137,7 +1137,7 @@
             <span data-i18n="footer_text">Trilingual Edition (English / Bahasa Melayu / 中文) · MyKad NRIC automatic
                 place-of-birth & gender extraction system.</span>
             <span id="appVersionBadge"
-                style="font-size: 0.72rem; color: var(--slate-400); font-weight: 700; background: var(--slate-100); padding: 4px 10px; border-radius: 20px;">v1.0.5</span>
+                style="font-size: 0.72rem; color: var(--slate-400); font-weight: 700; background: var(--slate-100); padding: 4px 10px; border-radius: 20px;">v2.0.1</span>
         </footer>
     </div>
 
@@ -2470,13 +2470,16 @@
                     });
                 }
 
-                // Track deleted resident ID
+                // Track deleted resident ID and idNumber
                 try {
                     const deletedResIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
                     if (!deletedResIds.includes(id)) {
                         deletedResIds.push(id);
-                        localStorage.setItem('deleted_resident_ids', JSON.stringify(deletedResIds));
                     }
+                    if (rec && rec.idNumber && !deletedResIds.includes(rec.idNumber)) {
+                        deletedResIds.push(rec.idNumber);
+                    }
+                    localStorage.setItem('deleted_resident_ids', JSON.stringify(deletedResIds));
                 } catch (e) {
                     console.error("Failed to update deleted_resident_ids", e);
                 }
@@ -2846,6 +2849,17 @@
             const mergedDeletedResIds = Array.from(new Set([...localDeletedResIds, ...cloudDeletedResidentIds]));
             localStorage.setItem('deleted_resident_ids', JSON.stringify(mergedDeletedResIds));
             const deletedResSet = new Set(mergedDeletedResIds);
+            const deletedIdNumSet = new Set();
+            mergedDeletedResIds.forEach(d => {
+                const lower = d.toLowerCase().trim();
+                if (/^\d{6}-\d{2}-\d{4}$/.test(lower)) deletedIdNumSet.add(lower);
+            });
+            const isDeleted = (r) => {
+                if (!r || !r.idNumber || !r.name) return false;
+                if (deletedResSet.has(r.id)) return true;
+                if (deletedIdNumSet.has(r.idNumber.toLowerCase().trim())) return true;
+                return false;
+            };
 
             const localDeletedCampIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
             const mergedDeletedCampIds = Array.from(new Set([...localDeletedCampIds, ...cloudDeletedCampaignIds]));
@@ -2857,6 +2871,7 @@
 
             const upsertResident = (r) => {
                 if (!r || !r.idNumber || !r.name) return;
+                if (isDeleted(r)) return;
                 const canonicalKey = (r.idNumber + '_' + r.name).toLowerCase().trim();
                 const existing = mergedResidentsMap.get(canonicalKey);
                 if (!existing) {
@@ -2873,20 +2888,11 @@
             cloudResidents.forEach(upsertResident);
             residents.forEach(upsertResident);
 
-            // Filter out deleted records
-            const mergedResidents = Array.from(mergedResidentsMap.values()).filter(r => {
-                const idMatch = r.id && deletedResSet.has(r.id);
-                const idNumLower = (r.idNumber || '').toLowerCase().trim();
-                const idNumMatch = cloudDeletedResidentIds.some(d => d.toLowerCase().trim() === idNumLower);
-                return !idMatch && !idNumMatch;
-            });
-
+            residents = Array.from(mergedResidentsMap.values()).filter(r => !isDeleted(r));
             console.log('[Restore] Cloud records upserted:', cloudResidents.length);
             console.log('[Restore] Local records upserted:', residents.length);
             console.log('[Restore] Merged map size:', mergedResidentsMap.size);
-            console.log('[Restore] After delete filter:', mergedResidents.length);
-
-            residents = mergedResidents;
+            console.log('[Restore] After delete filter:', residents.length);
 
             // Assign fresh UUIDs to records without one (cloud round-trip strips IDs)
             residents.forEach(r => {
