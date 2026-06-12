@@ -43,7 +43,7 @@
             --radius-md: 16px;
             --radius-lg: 24px;
 
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --primary-light: #eff6ff;
             --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
             --shadow-card: 0 20px 25px -5px rgba(15, 23, 42, 0.04), 0 10px 10px -6px rgba(15, 23, 42, 0.02);
         }
@@ -1060,6 +1060,9 @@
                                 class="fas fa-cloud-download-alt"></i> Restore Cloud</button>
                         <button id="exportLocalBtn" class="btn btn-outline btn-sm" data-i18n="btn_export"><i
                                 class="fas fa-file-excel"></i> Export Excel</button>
+                        <button id="importLocalBtn" class="btn btn-outline btn-sm" data-i18n="btn_import"><i
+                                class="fas fa-file-import"></i> Import Excel</button>
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
                         <button id="settingsBtn" class="btn btn-outline btn-sm" data-i18n="btn_settings"><i
                                 class="fas fa-cog"></i> Settings</button>
                         <button id="clearAllBtn" class="btn btn-danger btn-sm" data-i18n="btn_clear_all"><i
@@ -1100,7 +1103,7 @@
                         </thead>
                         <tbody id="tableBody">
                             <tr class="empty-row">
-                                <td colspan="5">Loading data records...</td>
+                                <td colspan="6">Loading data records...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1133,7 +1136,7 @@
             <span data-i18n="footer_text">Trilingual Edition (English / Bahasa Melayu / 中文) · MyKad NRIC automatic
                 place-of-birth & gender extraction system.</span>
             <span id="appVersionBadge"
-                style="font-size: 0.72rem; color: var(--slate-400); font-weight: 700; background: var(--slate-100); padding: 4px 10px; border-radius: 20px;">v1.0.0</span>
+                style="font-size: 0.72rem; color: var(--slate-400); font-weight: 700; background: var(--slate-100); padding: 4px 10px; border-radius: 20px;">v1.0.5</span>
         </footer>
     </div>
 
@@ -1403,6 +1406,9 @@
                 btn_sync: "<i class=\"fas fa-cloud-upload-alt\"></i> Sync to Cloud",
                 btn_restore: "<i class=\"fas fa-cloud-download-alt\"></i> Restore Cloud",
                 btn_export: "<i class=\"fas fa-file-excel\"></i> Export Excel",
+                btn_import: "<i class=\"fas fa-file-import\"></i> Import Excel",
+                toast_import_success: "Successfully imported %d records from Excel.",
+                toast_import_error: "Failed to import Excel file.",
                 btn_settings: "<i class=\"fas fa-cog\"></i> Settings",
                 btn_clear_all: "<i class=\"fas fa-trash\"></i> Clear All",
                 placeholder_search: "Search name, phone, MyKad, address...",
@@ -1498,6 +1504,10 @@
                 btn_sync: "<i class=\"fas fa-cloud-upload-alt\"></i> Sync ke Awan",
                 btn_restore: "<i class=\"fas fa-cloud-download-alt\"></i> Pulih dari Awan",
                 btn_export: "<i class=\"fas fa-file-excel\"></i> Eksport Excel",
+                btn_import: "<i class=\"fas fa-file-import\"></i> Import Excel",
+                toast_import_success: "Berjaya mengimport %d rekod dari Excel.",
+                toast_import_error: "Gagal mengimport fail Excel.",
+                btn_import: "<i class=\"fas fa-file-import\"></i> Import Excel",
                 btn_settings: "<i class=\"fas fa-cog\"></i> Tetapan",
                 btn_clear_all: "<i class=\"fas fa-trash\"></i> Padam Semua",
                 placeholder_search: "Cari nama, telefon, MyKad, alamat...",
@@ -1593,6 +1603,7 @@
                 btn_sync: "<i class=\"fas fa-cloud-upload-alt\"></i> 同步至云端",
                 btn_restore: "<i class=\"fas fa-cloud-download-alt\"></i> 从云端恢复",
                 btn_export: "<i class=\"fas fa-file-excel\"></i> 导出 Excel",
+                btn_import: "<i class=\"fas fa-file-import\"></i> 导入 Excel",
                 btn_settings: "<i class=\"fas fa-cog\"></i> 系统设置",
                 btn_clear_all: "<i class=\"fas fa-trash\"></i> 清空全部",
                 placeholder_search: "搜索姓名、电话、身份证、地址...",
@@ -1831,6 +1842,36 @@
             }
         }
 
+        function generateUniqueId() {
+            return Date.now().toString() + '-' + Math.random().toString(36).substr(2, 6);
+        }
+
+        function sanitizeRecords() {
+            let repaired = false;
+            const before = residents.length;
+            residents = residents.filter(r => r && r.idNumber && r.name);
+            if (residents.length !== before) repaired = true;
+
+            residents.forEach(r => {
+                if (!r.id) {
+                    r.id = generateUniqueId();
+                    repaired = true;
+                }
+                if (!r.donationHistory) { r.donationHistory = []; repaired = true; }
+                if (!r.familyRole) { r.familyRole = 'head'; repaired = true; }
+                if (!r.race) { r.race = ''; repaired = true; }
+                if (!r.updatedAt) { r.updatedAt = new Date().toISOString(); repaired = true; }
+                if (!r.phone) r.phone = '';
+                if (!r.address) r.address = '';
+                if (!r.familyHeadId) r.familyHeadId = '';
+                if (r.familyRole === 'head') r.familyHeadId = '';
+            });
+
+            if (repaired) {
+                persistData();
+            }
+        }
+
         // Initialize localforage
         localforage.config({
             name: "population_db",
@@ -2049,6 +2090,7 @@
 
                 initCampaigns();
                 migrateLegacyData();
+                sanitizeRecords();
                 renderCampaignSelector();
 
                 const savedLang = localStorage.getItem('app_language') || 'en';
@@ -2481,7 +2523,7 @@
                 const emptyText = filterData !== null
                     ? (lang === 'zh' ? '未找到符合条件的普查记录。' : (lang === 'ms' ? 'Tiada rekod sepadan ditemui.' : 'No matched records found for criteria.'))
                     : (lang === 'zh' ? '暂无登记的居民档案。请在左侧面板登记新记录。' : (lang === 'ms' ? 'Tiada profil didaftarkan. Sila daftarkan satu di panel kiri.' : 'No profiles registered. Register one on the left panel.'));
-                tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${emptyText}</td></tr>`;
+                tbody.innerHTML = `<tr class="empty-row"><td colspan="6">${emptyText}</td></tr>`;
                 return;
             }
 
@@ -2590,17 +2632,6 @@
             tbody.innerHTML = html;
         }
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>"]/g, function (m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                if (m === '"') return '&quot;';
-                return m;
-            });
-        }
-
         window.deleteRecordById = (id) => deleteRecord(id);
         window.editRecordById = (id) => {
             const rec = residents.find(r => r.id === id);
@@ -2610,6 +2641,41 @@
         window.viewHouseholdById = (id) => openHouseholdModal(id);
 
         // ----------------------------- Sync Engine Infrastructure -----------------------------
+
+        function getGoogleDiagnostics(url) {
+            return { url, configured: !!url, engine: 'google' };
+        }
+
+        function diagnoseGoogleSheets(url) {
+            const lang = localStorage.getItem('app_language') || 'en';
+            const diag = { url, configured: !!url, reachable: false, status: null, contentType: null, sample: null };
+
+            if (!url) {
+                diag.error = lang === 'zh' ? "未配置 Google Sheets URL" : "Google Sheets URL not configured";
+                return diag;
+            }
+
+            fetch(url, { method: 'GET', mode: 'cors' })
+                .then(res => {
+                    diag.reachable = true;
+                    diag.status = res.status;
+                    diag.contentType = res.headers.get('content-type');
+                    return res.text();
+                })
+                .then(text => {
+                    diag.sample = text ? text.slice(0, 200) : '(empty)';
+                    const looksJson = text.trim().startsWith('[') || text.trim().startsWith('{');
+                    if (!looksJson) {
+                        console.warn("[CENSUS][GoogleSheets] Response does not look like JSON:", diag.sample);
+                    }
+                })
+                .catch(err => {
+                    diag.error = err.message;
+                    console.error("[CENSUS][GoogleSheets] Fetch failed:", err);
+                });
+
+            return diag;
+        }
 
         // Dynamic status bar updates based on active engine
         function updateSyncStatusUI() {
@@ -2658,7 +2724,28 @@
 
         // Helper to construct the unified sync payload
         function getSyncPayload() {
-            const payload = [...residents];
+            // Recompute sheet linkage columns from current familyHeadId links
+            const idNumToId = new Map();
+            residents.forEach(r => { if (r.idNumber) idNumToId.set(r.idNumber.toLowerCase().trim(), r.id); });
+
+            const enriched = residents.map(r => {
+                const enriched = { ...r };
+                if (r.familyRole === 'member' && r.familyHeadId) {
+                    const head = residents.find(h => h.id === r.familyHeadId);
+                    enriched.familyHeadIdNumber = head ? head.idNumber : '';
+                } else {
+                    enriched.familyHeadIdNumber = '';
+                }
+                if (r.familyRole === 'head') {
+                    const members = residents.filter(m => m.familyHeadId === r.id);
+                    enriched.familyMemberIdNumbers = members.map(m => m.idNumber).filter(Boolean).join(',');
+                } else {
+                    enriched.familyMemberIdNumbers = '';
+                }
+                return enriched;
+            });
+
+            const payload = [...enriched];
             const deletedResidentIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
             const deletedCampaignIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
 
@@ -2667,7 +2754,8 @@
                 campaigns: campaigns,
                 activeCampaignId: activeCampaignId,
                 deletedResidentIds: deletedResidentIds,
-                deletedCampaignIds: deletedCampaignIds
+                deletedCampaignIds: deletedCampaignIds,
+                familyLinkages: []
             });
             return JSON.stringify(payload);
         }
@@ -2694,7 +2782,7 @@
                 cloudResidents = cloudData;
             }
 
-            // 1. Merge Deleted registers
+            // Merge Deleted registers (track both ids and idNumbers)
             const localDeletedResIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
             const mergedDeletedResIds = Array.from(new Set([...localDeletedResIds, ...cloudDeletedResidentIds]));
             localStorage.setItem('deleted_resident_ids', JSON.stringify(mergedDeletedResIds));
@@ -2705,34 +2793,90 @@
             localStorage.setItem('deleted_campaign_ids', JSON.stringify(mergedDeletedCampIds));
             const deletedCampSet = new Set(mergedDeletedCampIds);
 
-            // 2. Merge Residents
+            // 2. Merge Residents - use idNumber+name as the canonical identity key
             const mergedResidentsMap = new Map();
 
-            // Add cloud residents first
-            cloudResidents.forEach(r => {
-                if (r && r.id && !deletedResSet.has(r.id)) {
-                    mergedResidentsMap.set(r.id, r);
-                }
-            });
-
-            // Overwrite/merge with local residents
-            residents.forEach(r => {
-                if (r && r.id && !deletedResSet.has(r.id)) {
-                    const existing = mergedResidentsMap.get(r.id);
-                    if (!existing) {
-                        mergedResidentsMap.set(r.id, r);
-                    } else {
-                        const localTime = new Date(r.updatedAt || 0).getTime();
-                        const cloudTime = new Date(existing.updatedAt || 0).getTime();
-                        // If local is newer or same time, keep local; otherwise cloud
-                        if (localTime >= cloudTime) {
-                            mergedResidentsMap.set(r.id, r);
-                        }
+            const upsertResident = (r) => {
+                if (!r || !r.idNumber || !r.name) return;
+                const canonicalKey = (r.idNumber + '_' + r.name).toLowerCase().trim();
+                const existing = mergedResidentsMap.get(canonicalKey);
+                if (!existing) {
+                    mergedResidentsMap.set(canonicalKey, r);
+                } else {
+                    const existingTime = new Date(existing.updatedAt || 0).getTime();
+                    const newTime = new Date(r.updatedAt || 0).getTime();
+                    if (newTime >= existingTime) {
+                        mergedResidentsMap.set(canonicalKey, r);
                     }
                 }
+            };
+
+            cloudResidents.forEach(upsertResident);
+            residents.forEach(upsertResident);
+
+            // Filter out deleted records
+            const mergedResidents = Array.from(mergedResidentsMap.values()).filter(r => {
+                const idMatch = r.id && deletedResSet.has(r.id);
+                const idNumLower = (r.idNumber || '').toLowerCase().trim();
+                const idNumMatch = cloudDeletedResidentIds.some(d => d.toLowerCase().trim() === idNumLower);
+                return !idMatch && !idNumMatch;
             });
 
-            residents = Array.from(mergedResidentsMap.values());
+            console.log('[Restore] Cloud records upserted:', cloudResidents.length);
+            console.log('[Restore] Local records upserted:', residents.length);
+            console.log('[Restore] Merged map size:', mergedResidentsMap.size);
+            console.log('[Restore] After delete filter:', mergedResidents.length);
+
+            residents = mergedResidents;
+
+            // Assign fresh UUIDs to records without one (cloud round-trip strips IDs)
+            residents.forEach(r => {
+                if (!r.id) {
+                    r.id = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 6);
+                    r.updatedAt = new Date().toISOString();
+                }
+            });
+
+            console.log('[Restore] Residents after merge:', residents.length);
+            console.log('[Restore] Sample merged record keys:', residents[0] ? Object.keys(residents[0]) : 'none');
+            console.log('[Restore] Sample merged record familyHeadIdNumber:', residents[0] ? residents[0].familyHeadIdNumber : 'none');
+
+            // 2. Rebuild family linkages from sheet columns (familyHeadIdNumber / familyMemberIdNumbers)
+            const idNumToId = new Map();
+            residents.forEach(r => { if (r.idNumber) idNumToId.set(r.idNumber.toLowerCase().trim(), r.id); });
+
+            let linkagesAppliedCount = 0;
+            const membersNeedingLink = residents.filter(r => r.familyRole === 'member' && r.familyHeadIdNumber);
+            console.log('[Restore] Members needing linkage:', membersNeedingLink.length);
+            if (membersNeedingLink.length > 0) {
+                console.log('[Restore] First member needing link:', {
+                    name: membersNeedingLink[0].name,
+                    headIdNum: membersNeedingLink[0].familyHeadIdNumber,
+                    idNumber: membersNeedingLink[0].idNumber
+                });
+            }
+            const headsInMap = Array.from(idNumToId.entries()).slice(0, 5);
+            console.log('[Restore] Heads in idNumToId (first 5):', headsInMap);
+
+            residents.forEach(r => {
+                const headIdNum = (r.familyHeadIdNumber || '').toLowerCase().trim();
+                if (headIdNum && r.familyRole === 'member') {
+                    const headId = idNumToId.get(headIdNum);
+                    console.log('[Restore] Member', r.name, 'headIdNum:', headIdNum, 'found headId:', headId, 'head exists:', !!residents.find(h => h.id === headId));
+                    if (headId) { r.familyHeadId = headId; linkagesAppliedCount++; }
+                }
+                if (r.familyRole === 'head' && r.familyMemberIdNumbers) {
+                    (r.familyMemberIdNumbers || '').split(',').forEach(mIdNum => {
+                        const mId = idNumToId.get(mIdNum.toLowerCase().trim());
+                        if (mId) {
+                            const member = residents.find(res => res.id === mId);
+                            if (member && !member.familyHeadIdNumber) { member.familyHeadId = r.id; linkagesAppliedCount++; }
+                        }
+                    });
+                }
+            });
+            console.log('[Restore] Linkages applied:', linkagesAppliedCount);
+            console.log('[Restore] Members with familyHeadId after rebuild:', residents.filter(r => r.familyHeadId).length);
 
             // 3. Merge Campaigns
             const mergedCampaignsMap = new Map();
@@ -2786,7 +2930,8 @@
             return true;
         }
 
-        // Debounced Background Auto-Sync
+        // Sync lock to prevent concurrent sync operations
+        let syncInProgress = false;
         let autoSyncTimer = null;
         function triggerAutoSync() {
             const autoSyncEnabled = localStorage.getItem('auto_sync') === 'true';
@@ -2824,7 +2969,8 @@
                     try {
                         const fetchResponse = await fetch(url);
                         if (fetchResponse.ok) {
-                            cloudData = await fetchResponse.json();
+                            const text = await fetchResponse.text();
+                            cloudData = text ? JSON.parse(text) : [];
                         }
                     } catch (e) {
                         console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
@@ -2862,7 +3008,8 @@
                     try {
                         const fetchResponse = await fetch(`https://kvdb.io/${bucketId}/${syncKey}`);
                         if (fetchResponse.ok) {
-                            cloudData = await fetchResponse.json();
+                            const text = await fetchResponse.text();
+                            cloudData = text ? JSON.parse(text) : [];
                         }
                     } catch (e) {
                         console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
@@ -2892,6 +3039,11 @@
 
         // Manual Cloud Push
         async function syncToCloud() {
+            if (syncInProgress) {
+                showToast(t("btn_sync"), localStorage.getItem('app_language') === 'zh' ? "同步正在进行中，请稍候..." : (localStorage.getItem('app_language') === 'ms' ? "Penyelarasan sedang berjalan, sila tunggu..." : "Sync already in progress, please wait..."), "warning");
+                return;
+            }
+            syncInProgress = true;
             const engine = localStorage.getItem('sync_engine') || 'kvdb';
             const syncBtn = document.getElementById("syncToCloudBtn");
             const originalHTML = syncBtn.innerHTML;
@@ -2925,8 +3077,16 @@
                     try {
                         const fetchResponse = await fetch(url);
                         if (fetchResponse.ok) {
-                            cloudData = await fetchResponse.json();
-                            fetchSuccess = true;
+                            try {
+                                const text = await fetchResponse.text();
+                                cloudData = text ? JSON.parse(text) : [];
+                                if (!Array.isArray(cloudData)) cloudData = [];
+                                fetchSuccess = true;
+                            } catch (parseErr) {
+                                console.warn("Failed to parse cloud JSON, treating as empty.", parseErr);
+                                cloudData = [];
+                                fetchSuccess = true;
+                            }
                         }
                     } catch (e) {
                         console.warn("Failed to fetch current cloud data. Proceeding...", e);
@@ -3033,11 +3193,17 @@
             } finally {
                 syncBtn.disabled = false;
                 syncBtn.innerHTML = originalHTML;
+                syncInProgress = false;
             }
         }
 
         // Restore / Pull Engine selection
         async function restoreFromCloud() {
+            if (syncInProgress) {
+                showToast(t("btn_restore"), localStorage.getItem('app_language') === 'zh' ? "同步正在进行中，请稍候..." : (localStorage.getItem('app_language') === 'ms' ? "Penyelarasan sedang berjalan, sila tunggu..." : "Sync already in progress, please wait..."), "warning");
+                return;
+            }
+            syncInProgress = true;
             const engine = localStorage.getItem('sync_engine') || 'kvdb';
             const lang = localStorage.getItem('app_language') || 'en';
             if (engine === 'google') {
@@ -3062,36 +3228,52 @@
                         const response = await fetch(url);
                         if (!response.ok) throw new Error("Failed to contact Google Sheets Apps Script API.");
 
-                        const cloudData = await response.json();
-                        if (Array.isArray(cloudData)) {
-                            const cloudRecordCount = cloudData.filter(r => r && r.id !== "METADATA_CAMPAIGNS").length;
-                            if (cloudRecordCount === 0) {
-                                const confirmEmpty = lang === 'zh' ? "⚠️ 云端备份为空。这不会覆盖本地数据，但没有数据可供合并。确定要继续吗？" :
-                                    (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Tiada data untuk digabungkan. Teruskan?" :
-                                        "⚠️ The cloud database is empty. No data is available to merge. Do you want to proceed?");
-                                if (!confirm(confirmEmpty)) {
-                                    return;
-                                }
-                            }
-
-                            mergeAndApplyCloudData(cloudData);
-                            await persistData();
-                            clearForm();
-                            renderCampaignSelector();
-                            showToast(t("btn_restore"), lang === 'zh' ? `成功与 Google 表格合并了 ${cloudRecordCount} 条记录！` : (lang === 'ms' ? `Berjaya menggabungkan ${cloudRecordCount} rekod dari Google Sheets!` : `Successfully merged ${cloudRecordCount} records from Google Sheets!`), "success");
-                        } else {
-                            throw new Error("Invalid remote database schema returned.");
+                        const text = await response.text();
+                        let cloudData = [];
+                        try {
+                            cloudData = text ? JSON.parse(text) : [];
+                            if (!Array.isArray(cloudData)) throw new Error("Invalid format");
+                        } catch (parseErr) {
+                            console.warn("Cloud returned non-JSON or invalid data. Treating as empty.", parseErr);
+                            cloudData = [];
                         }
+
+                        console.log('[Restore] Raw cloudData length:', cloudData.length);
+                        console.log('[Restore] Sample record keys:', cloudData[0] ? Object.keys(cloudData[0]) : 'none');
+                        console.log('[Restore] Sample record:', JSON.stringify(cloudData[0]).substring(0, 300));
+                        const cloudRecordCount = cloudData.filter(r => r && r.id !== "METADATA_CAMPAIGNS" && (r.idNumber || r.name)).length;
+                        console.log('[Restore] Valid cloud records:', cloudRecordCount);
+                        console.log('[Restore] Local residents before merge:', residents.length);
+
+                        if (cloudRecordCount === 0) {
+                            const confirmEmpty = lang === 'zh' ? "⚠️ 云端备份为空。这不会覆盖本地数据，但没有数据可供合并。确定要继续吗？" :
+                                (lang === 'ms' ? "⚠️ Pangkalan data awan kosong. Tiada data untuk digabungkan. Teruskan?" :
+                                    "⚠️ The cloud database is empty. No data is available to merge. Do you want to proceed?");
+                            if (!confirm(confirmEmpty)) {
+                                syncInProgress = false;
+                                return;
+                            }
+                        }
+
+                        mergeAndApplyCloudData(cloudData);
+                        await persistData();
+                        clearForm();
+                        renderCampaignSelector();
+                        updateDashboard();
+                        applyFilters();
+                        showToast(t("btn_restore"), lang === 'zh' ? `成功与 Google 表格合并了 ${cloudRecordCount} 条记录！` : (lang === 'ms' ? `Berjaya menggabungkan ${cloudRecordCount} rekod dari Google Sheets!` : `Successfully merged ${cloudRecordCount} records from Google Sheets!`), "success");
                     } catch (err) {
                         console.error(err);
                         showToast(t("btn_restore"), err.message || "Error communicating with Google Sheets.", "danger");
                     } finally {
                         restoreBtn.disabled = false;
                         restoreBtn.innerHTML = originalHTML;
+                        syncInProgress = false;
                     }
                 }
             } else {
                 openCloudModal(); // Open kvdb sync key prompt dialog
+                syncInProgress = false;
             }
         }
 
@@ -3705,6 +3887,186 @@
             }
         }
 
+        // ----------------------------- Excel/CSV Import Engine -----------------------------
+        async function importFromExcel(file) {
+            const lang = localStorage.getItem('app_language') || 'en';
+            if (!file) return;
+
+            try {
+                const fileName = file.name.toLowerCase();
+                const isCsv = fileName.endsWith('.csv');
+                let jsonData = [];
+
+                if (isCsv) {
+                    const text = await file.text();
+                    const lines = text.split(/\r?\n/).filter(line => line.trim());
+                    if (lines.length < 2) {
+                        alert(lang === 'zh' ? "CSV 文件没有数据行。" : (lang === 'ms' ? "Tiada data dalam fail CSV." : "No data rows found in CSV file."));
+                        return;
+                    }
+                    const headers = parseCsvLine(lines[0]);
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = parseCsvLine(lines[i]);
+                        const row = {};
+                        headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+                        jsonData.push(row);
+                    }
+                } else {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                }
+
+                if (!jsonData.length) {
+                    alert(lang === 'zh' ? "文件中没有找到数据行。" : (lang === 'ms' ? "Tiada data dijumpai dalam fail." : "No data rows found in the file."));
+                    return;
+                }
+
+                // Build name→id lookup from existing data for family linking
+                const nameToId = new Map();
+                residents.forEach(r => {
+                    if (r.name && r.id) nameToId.set(r.name.toLowerCase().trim(), r.id);
+                });
+
+                let imported = 0;
+                let skipped = 0;
+                const errors = [];
+                const batch = [];
+
+                jsonData.forEach((row, idx) => {
+                    const rowNum = idx + 2;
+                    const name = (row['Full Name / Nama Penuh / 姓名'] || row['Name'] || row['Nama'] || row['姓名'] || '').toString().trim();
+                    const myKad = (row['MyKad NRIC / 身份证'] || row['MyKad'] || row['NRIC'] || row['身份证'] || '').toString().trim();
+                    const phone = (row['Phone / Telefon / 电话'] || row['Phone'] || row['Telefon'] || row['电话'] || '').toString().trim();
+                    const race = (row['Race / Bangsa / 种族'] || row['Race'] || row['Bangsa'] || row['种族'] || '').toString().trim();
+                    const gender = (row['Gender / Jantina / 性别'] || row['Gender'] || row['Jantina'] || row['性别'] || '').toString().trim();
+                    const age = (row['Age / Umur / 年龄'] || row['Age'] || row['Umur'] || row['年龄'] || '').toString().trim();
+                    const birthdate = (row['Birthdate / Tarikh Lahir / 出生日期'] || row['Birthdate'] || row['Tarikh Lahir'] || row['出生日期'] || '').toString().trim();
+                    const state = (row['State of Birth / Negeri Kelahiran / 出生州属'] || row['State of Birth'] || row['Negeri Kelahiran'] || row['出生州属'] || '').toString().trim();
+                    const familyRole = (row['Household Role / Peranan / 户口角色'] || '').toString().trim();
+                    const familyHeadName = (row['Family Head Name / Ketua Keluarga / 所属户主'] || '').toString().trim();
+                    const address = (row['Address / Alamat / 住宅地址'] || row['Address'] || row['Alamat'] || row['住宅地址'] || '').toString().trim();
+                    const aidStatus = (row['Aid Status / Status Bantuan / 领取状态'] || row['Aid Status'] || row['Status Bantuan'] || row['领取状态'] || '').toString().trim();
+                    const aidItem = (row['Aid Item / Barang Sumbangan / 物资名称'] || row['Aid Item'] || row['Barang Sumbangan'] || row['物资名称'] || '').toString().trim();
+                    const claimDate = (row['Claim Date / Masa Tuntutan / 领取时间'] || row['Claim Date'] || row['Masa Tuntutan'] || row['领取时间'] || '').toString().trim();
+
+                    if (!name || !myKad) {
+                        skipped++;
+                        errors.push(`Row ${rowNum}: Missing name or MyKad`);
+                        return;
+                    }
+
+                    const cleaned = myKad.replace(/\D/g, '');
+                    if (cleaned.length !== 12 || !validateIdCard(cleaned)) {
+                        skipped++;
+                        errors.push(`Row ${rowNum}: Invalid MyKad format`);
+                        return;
+                    }
+
+                    if (isIdNumberDuplicate(cleaned)) {
+                        skipped++;
+                        errors.push(`Row ${rowNum}: Duplicate MyKad`);
+                        return;
+                    }
+
+                    const newId = generateUniqueId();
+                    const isMember = familyRole && familyRole.toLowerCase().includes('member');
+
+                    batch.push({
+                        id: newId,
+                        name: name,
+                        phone: phone,
+                        idNumber: formatMyKad(cleaned),
+                        race: race,
+                        gender: gender,
+                        age: age,
+                        birthdate: birthdate,
+                        state: state,
+                        address: address,
+                        familyRole: isMember ? 'member' : 'head',
+                        familyHeadId: '',
+                        familyHeadName: familyHeadName,
+                        aidStatus: aidStatus,
+                        aidItem: aidItem,
+                        claimDate: claimDate,
+                        donationHistory: [],
+                        updatedAt: new Date().toISOString()
+                    });
+
+                    nameToId.set(name.toLowerCase().trim(), newId);
+                    imported++;
+                });
+
+                // Second pass: resolve familyHeadId using name→id map
+                // batch[i] corresponds to jsonData[i], so we can use the index directly
+                batch.forEach((r, i) => {
+                    if (r.familyRole === 'member') {
+                        const headName = (jsonData[i]['Family Head Name / Ketua Keluarga / 所属户主'] || '').toString().trim();
+                        if (headName) {
+                            const matchedId = nameToId.get(headName.toLowerCase().trim());
+                            if (matchedId) {
+                                r.familyHeadId = matchedId;
+                            } else {
+                                console.warn(`[IMPORT] Could not find head ID for "${headName}" (member: ${r.name})`);
+                            }
+                        }
+                    }
+                });
+
+                residents.unshift(...batch);
+
+                if (imported > 0) {
+                    await persistData();
+                    renderCampaignSelector();
+                    updateDashboard();
+                    applyFilters();
+                }
+
+                let msg = lang === 'zh' ?
+                    `导入完成：成功 ${imported} 条，跳过 ${skipped} 条。` :
+                    (lang === 'ms' ?
+                        `Import selesai: ${imported} berjaya, ${skipped} dilangkau.` :
+                        `Import complete: ${imported} added, ${skipped} skipped.`);
+
+                if (errors.length > 0 && errors.length <= 10) {
+                    msg += '\n\n' + errors.join('\n');
+                } else if (errors.length > 10) {
+                    msg += `\n\n${errors.slice(0, 10).join('\n')}\n... and ${errors.length - 10} more.`;
+                }
+
+                showToast(lang === 'zh' ? "导入文件" : (lang === 'ms' ? "Import Fail" : "Import File"), msg, imported > 0 ? "success" : "warning");
+            } catch (err) {
+                console.error("File import error:", err);
+                showToast(t("btn_import"), lang === 'zh' ? "导入失败，请检查文件格式。" : (lang === 'ms' ? "Import gagal. Sila semak format fail." : "Import failed. Please check file format."), "danger");
+            }
+        }
+
+        function parseCsvLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
         // ----------------------------- Dynamic Event Binding -----------------------------
 
         // 1. Family Role selectors display toggle
@@ -3898,6 +4260,18 @@
         document.getElementById("syncToCloudBtn").addEventListener("click", syncToCloud);
         document.getElementById("exportLocalBtn").addEventListener("click", exportToExcel); // Hooked to Genuine SheetJS Excel Exporter
         document.getElementById("clearAllBtn").addEventListener("click", clearAllData);
+
+        // 7.5 Import Excel Hooks
+        document.getElementById("importLocalBtn").addEventListener("click", () => {
+            document.getElementById("excelFileInput").click();
+        });
+        document.getElementById("excelFileInput").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importFromExcel(file);
+                e.target.value = '';
+            }
+        });
 
         // Campaign Selector & Creator & Deletion Bindings
         document.getElementById("campaignSelect").addEventListener("change", (e) => {

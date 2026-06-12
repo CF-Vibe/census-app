@@ -1,0 +1,22 @@
+index.html:2259 [CENSUS DICTIONARY] updateFamilyHeadDropdown called with query: 
+index.html:2269 [CENSUS DICTIONARY] Registered heads in database memory: 0 []
+index.html:3219 [Restore] Raw cloudData length: 176
+index.html:3220 [Restore] Sample record keys: (20) ['id', 'name', 'phone', 'idNumber', 'race', 'gender', 'age', 'birthdate', 'state', 'familyRole', 'familyHeadName', 'address', 'aidStatus', 'aidItem', 'claimDate', 'familyHeadIdNumber', 'familyMemberIdNumbers', 'familyHeadId', 'donationHistory', 'updatedAt']
+index.html:3221 [Restore] Sample record: {"id":"","name":"LIN SIAU YEE","phone":168272217,"idNumber":"871009-12-5090","race":"Chinese / Cina / 华裔 (华人)","gender":"Female / Perempuan / 女","age":38,"birthdate":"1987-10-09T07:00:00.000Z","state":"Sabah","familyRole":"member","familyHeadName":"Hsiu Min Yap","address":"Lot 1933, Semi-detached, P
+index.html:3223 [Restore] Valid cloud records: 176
+index.html:3224 [Restore] Local residents before merge: 0
+index.html:2825 [Restore] Cloud records upserted: 176
+index.html:2826 [Restore] Local records upserted: 0
+index.html:2827 [Restore] Merged map size: 176
+index.html:2828 [Restore] After delete filter: 176
+index.html:2831 [Restore] Residents after merge: 176
+index.html:2832 [Restore] Sample merged record keys: (20) ['id', 'name', 'phone', 'idNumber', 'race', 'gender', 'age', 'birthdate', 'state', 'familyRole', 'familyHeadName', 'address', 'aidStatus', 'aidItem', 'claimDate', 'familyHeadIdNumber', 'familyMemberIdNumbers', 'familyHeadId', 'donationHistory', 'updatedAt']
+index.html:2833 [Restore] Sample merged record familyHeadIdNumber: 860919-49-6137
+index.html:2856 [Restore] Linkages applied: 0
+index.html:2857 [Restore] Members with familyHeadId after rebuild: 0
+index.html:2259 [CENSUS DICTIONARY] updateFamilyHeadDropdown called with query: 
+index.html:2269 [CENSUS DICTIONARY] Registered heads in database memory: 78 (78) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index.html:2259 [CENSUS DICTIONARY] updateFamilyHeadDropdown called with query: 
+index.html:2269 [CENSUS DICTIONARY] Registered heads in database memory: 78 (78) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index.html:2259 [CENSUS DICTIONARY] updateFamilyHeadDropdown called with query: 
+index.html:2269 [CENSUS DICTIONARY] Registered heads in database memory: 78 (78) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
