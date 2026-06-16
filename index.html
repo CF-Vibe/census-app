@@ -2616,7 +2616,8 @@
 
         function renderTable(filterData = null) {
             const tbody = document.getElementById("tableBody");
-            const dataToRender = filterData !== null ? filterData : residents;
+            let dataToRender = filterData !== null ? [...filterData] : [...residents];
+            dataToRender.sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0));
             const lang = localStorage.getItem('app_language') || 'en';
 
             if (!dataToRender.length) {
@@ -2922,7 +2923,7 @@
                 return enriched;
             });
 
-            const payload = [...enriched];
+            const payload = [...enriched].sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0));
             const deletedResidentIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
             const deletedCampaignIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
 
