@@ -2616,8 +2616,7 @@
 
         function renderTable(filterData = null) {
             const tbody = document.getElementById("tableBody");
-            let dataToRender = filterData !== null ? [...filterData] : [...residents];
-            dataToRender.sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0));
+            const dataToRender = filterData !== null ? filterData : residents;
             const lang = localStorage.getItem('app_language') || 'en';
 
             if (!dataToRender.length) {
@@ -2923,7 +2922,7 @@
                 return enriched;
             });
 
-            const payload = [...enriched].sort((a, b) => new Date(a.updatedAt || 0) - new Date(b.updatedAt || 0));
+            const payload = [...enriched].sort((a, b) => new Date(a.createdAt || a.updatedAt || 0) - new Date(b.createdAt || b.updatedAt || 0));
             const deletedResidentIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
             const deletedCampaignIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
 
@@ -4141,7 +4140,7 @@
                 jsonData.forEach((row, idx) => {
                     const rowNum = idx + 2;
                     const name = (row['Full Name / Nama Penuh / 姓名'] || row['Name'] || row['Nama'] || row['姓名'] || '').toString().trim();
-                    const myKad = (row['MyKad NRIC / 身份证'] || row['MyKad'] || row['NRIC'] || row['身份证'] || '').toString().trim();
+                    const myKad = (row['MyKad / ID Number'] || row['MyKad NRIC / 身份证'] || row['MyKad'] || row['NRIC'] || row['身份证'] || '').toString().trim();
                     const phone = (row['Phone / Telefon / 电话'] || row['Phone'] || row['Telefon'] || row['电话'] || '').toString().trim();
                     const race = (row['Race / Bangsa / 种族'] || row['Race'] || row['Bangsa'] || row['种族'] || '').toString().trim();
                     const gender = (row['Gender / Jantina / 性别'] || row['Gender'] || row['Jantina'] || row['性别'] || '').toString().trim();
@@ -4150,10 +4149,13 @@
                     const state = (row['State of Birth / Negeri Kelahiran / 出生州属'] || row['State of Birth'] || row['Negeri Kelahiran'] || row['出生州属'] || '').toString().trim();
                     const familyRole = (row['Household Role / Peranan / 户口角色'] || '').toString().trim();
                     const familyHeadName = (row['Family Head Name / Ketua Keluarga / 所属户主'] || '').toString().trim();
+                    const familyHeadIdNumber = (row['Family Head ID Number'] || '').toString().trim();
+                    const familyMemberIdNumbers = (row['Family Member ID Numbers'] || '').toString().trim();
                     const address = (row['Address / Alamat / 住宅地址'] || row['Address'] || row['Alamat'] || row['住宅地址'] || '').toString().trim();
                     const aidStatus = (row['Aid Status / Status Bantuan / 领取状态'] || row['Aid Status'] || row['Status Bantuan'] || row['领取状态'] || '').toString().trim();
                     const aidItem = (row['Aid Item / Barang Sumbangan / 物资名称'] || row['Aid Item'] || row['Barang Sumbangan'] || row['物资名称'] || '').toString().trim();
                     const claimDate = (row['Claim Date / Masa Tuntutan / 领取时间'] || row['Claim Date'] || row['Masa Tuntutan'] || row['领取时间'] || '').toString().trim();
+                    const claimHistoryRaw = (row['Claim History / Sejarah Tuntutan / 领取记录'] || row['Claim History'] || '{}').toString().trim();
 
                     if (!name || !myKad) {
                         skipped++;
@@ -4191,9 +4193,14 @@
                         familyRole: isMember ? 'member' : 'head',
                         familyHeadId: '',
                         familyHeadName: familyHeadName,
+                        familyHeadIdNumber: familyHeadIdNumber,
+                        familyMemberIdNumbers: familyMemberIdNumbers,
                         aidStatus: aidStatus,
                         aidItem: aidItem,
                         claimDate: claimDate,
+                        claimHistory: (() => {
+                            try { return JSON.parse(claimHistoryRaw || '{}'); } catch(e) { return {}; }
+                        })(),
                         donationHistory: [],
                         updatedAt: new Date().toISOString()
                     });
