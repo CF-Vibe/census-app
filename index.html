@@ -2419,7 +2419,7 @@
 
         // Add or Edit Census Profile
         function addOrUpdateRecord(recordData) {
-            const { name, phone, idNumber, race, address, familyRole, familyHeadId } = recordData;
+            const { name, phone, idNumber, race, address, familyRole, familyHeadId, gender, birthdate, age, state } = recordData;
             const cleanedMyKad = idNumber.replace(/\D/g, '');
 
             if (!name.trim() || !cleanedMyKad) {
@@ -2445,6 +2445,10 @@
                         phone: phone.trim(),
                         idNumber: formatMyKad(cleanedMyKad),
                         race: race,
+                        gender: gender,
+                        birthdate: birthdate,
+                        age: age,
+                        state: state,
                         address: address.trim(),
                         familyRole: familyRole,
                         familyHeadId: familyRole === 'member' ? familyHeadId : "",
@@ -2465,6 +2469,10 @@
                     phone: phone.trim(),
                     idNumber: formatMyKad(cleanedMyKad),
                     race: race,
+                    gender: gender,
+                    birthdate: birthdate,
+                    age: age,
+                    state: state,
                     address: address.trim(),
                     familyRole: familyRole,
                     familyHeadId: familyRole === 'member' ? familyHeadId : "",
@@ -2892,6 +2900,25 @@
                     enriched.claimDate = '';
                     enriched.aidItem = '';
                 }
+
+                if (r.birthdate && r.birthdate.includes('T')) {
+                    enriched.birthdate = r.birthdate.split('T')[0];
+                }
+                if (r.gender) {
+                    const g = r.gender.toLowerCase();
+                    if (g === 'male' || g === 'male / lelaki / 男') {
+                        enriched.gender = 'Male / Lelaki / 男';
+                    } else if (g === 'female' || g === 'female / perempuan / 女') {
+                        enriched.gender = 'Female / Perempuan / 女';
+                    }
+                }
+                if (r.age && !isNaN(parseInt(r.age))) {
+                    enriched.age = parseInt(r.age);
+                }
+                if (r.state) {
+                    enriched.state = r.state;
+                }
+
                 return enriched;
             });
 
@@ -4324,7 +4351,13 @@
             const familyRole = document.getElementById("familyRole").value;
             const familyHeadId = document.getElementById("familyHeadId").value;
 
-            addOrUpdateRecord({ name, phone, idNumber, race, address, familyRole, familyHeadId });
+            const parsed = parseIdCard(idNumber.replace(/\D/g, ''));
+            const gender = parsed ? parsed.gender : '';
+            const birthdate = parsed ? parsed.birthStr : '';
+            const age = parsed ? parsed.age : '';
+            const state = parsed ? parsed.state : '';
+
+            addOrUpdateRecord({ name, phone, idNumber, race, address, familyRole, familyHeadId, gender, birthdate, age, state });
         });
 
         // 3. Interactive MyKad Typing and Parser Listener
