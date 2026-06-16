@@ -2992,16 +2992,25 @@
                 if (!existing) {
                     mergedResidentsMap.set(canonicalKey, r);
                 } else {
-                    const existingTime = new Date(existing.updatedAt || 0).getTime();
-                    const newTime = new Date(r.updatedAt || 0).getTime();
-                    if (newTime >= existingTime) {
+                    // Local records always win over cloud (local is source of truth after manual input)
+                    const existingSource = existing._source || 'cloud';
+                    const newSource = r._source || 'cloud';
+                    if (newSource === 'local' && existingSource !== 'local') {
                         mergedResidentsMap.set(canonicalKey, r);
+                    } else if (existingSource === 'local' && newSource !== 'local') {
+                        // keep existing (local)
+                    } else {
+                        const existingTime = new Date(existing.updatedAt || 0).getTime();
+                        const newTime = new Date(r.updatedAt || 0).getTime();
+                        if (newTime >= existingTime) {
+                            mergedResidentsMap.set(canonicalKey, r);
+                        }
                     }
                 }
             };
 
-            cloudResidents.forEach(upsertResident);
-            residents.forEach(upsertResident);
+            cloudResidents.forEach(r => { r._source = 'cloud'; upsertResident(r); });
+            residents.forEach(r => { r._source = 'local'; upsertResident(r); });
 
             residents = Array.from(mergedResidentsMap.values()).filter(r => !isDeleted(r));
             console.log('[Restore] Cloud records upserted:', cloudResidents.length);
@@ -4060,7 +4069,19 @@
                         'Address / Alamat / 住宅地址': r.address || '—',
                         'Aid Status / Status Bantuan / 领取状态': isClaimed ? 'Claimed / Telah Dituntut / 已领取' : 'Unclaimed / Belum Dituntut / 尚未领取',
                         'Aid Item / Barang Sumbangan / 物资名称': itemName,
-                        'Claim Date / Masa Tuntutan / 领取时间': claimTime ? new Date(claimTime).toLocaleString() : '—'
+                        'Claim Date / Masa Tuntutan / 领取时间': claimTime ? new Date(claimTime).toLocaleString() : '—',
+                        'Claim History (All Campaigns) / Sejarah Tuntutan / 领取记录': (() => {
+                            const hist = r.claimHistory || {};
+                            if (!Object.keys(hist).length) return '—';
+                            return Object.entries(hist).map(([cid, entry]) => {
+                                const camp = campaigns.find(c => c.id === cid);
+                                const cname = camp ? camp.name : cid;
+                                const items = (entry.items || []).map(it => it.name || it).filter(Boolean).join(', ') || '—';
+                                const claimed = entry.claimed ? 'Claimed' : 'Unclaimed';
+                                const date = entry.claimedAt ? new Date(entry.claimedAt).toLocaleDateString() : '—';
+                                return `${cname}: ${items} [${claimed}] ${date}`;
+                            }).join(' | ');
+                        })()
                     };
                 });
 
