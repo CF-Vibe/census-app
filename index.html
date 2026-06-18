@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="app-version" content="2.1.1">
+    <meta name="app-version" content="2.1.2">
     <title>Malaysia Census System - Digital Management Center</title>
     <!-- Modern Typography: Inter & Outfit -->
     <link
@@ -532,9 +532,11 @@
             animation: rowFadeIn 0.3s ease forwards;
             cursor: pointer;
         }
+
         .fade-in-row:hover td {
             background: #f0f7ff !important;
         }
+
         .fade-in-row:hover .action-icons {
             background: transparent !important;
         }
@@ -833,6 +835,7 @@
             padding: 14px 16px;
             border: 1px solid var(--slate-200);
         }
+
         .detail-section-title {
             font-size: 0.75rem;
             font-weight: 700;
@@ -841,27 +844,32 @@
             color: var(--slate-400);
             margin-bottom: 10px;
         }
+
         .detail-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
+
         .detail-label {
             font-size: 0.72rem;
             color: var(--slate-400);
             font-weight: 600;
             margin-bottom: 2px;
         }
+
         .detail-value {
             font-size: 0.88rem;
             color: var(--slate-800);
             font-weight: 600;
             word-break: break-all;
         }
+
         .detail-value.mono {
             font-family: monospace;
             letter-spacing: 0.3px;
         }
+
         .detail-row {
             display: flex;
             align-items: center;
@@ -869,9 +877,11 @@
             padding: 6px 0;
             border-bottom: 1px solid var(--slate-100);
         }
+
         .detail-row:last-child {
             border-bottom: none;
         }
+
         .detail-copy-btn {
             font-size: 0.7rem;
             color: var(--primary);
@@ -882,9 +892,11 @@
             padding: 2px 6px;
             border-radius: 4px;
         }
+
         .detail-copy-btn:hover {
             background: var(--slate-100);
         }
+
         .detail-meta {
             font-size: 0.72rem;
             color: var(--slate-400);
@@ -1428,16 +1440,19 @@
     <div id="householdModal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3><i class="fas fa-sitemap" style="color: var(--primary);"></i> <span data-i18n="ht_modal_title">Household Family Tree</span></h3>
+                <h3><i class="fas fa-sitemap" style="color: var(--primary);"></i> <span
+                        data-i18n="ht_modal_title">Household Family Tree</span></h3>
                 <button class="modal-close-btn" id="closeHouseholdModalBtn">&times;</button>
             </div>
             <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
-                <div id="householdTreeContainer" style="background: var(--slate-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--slate-200); max-height: 400px; overflow-y: auto;">
+                <div id="householdTreeContainer"
+                    style="background: var(--slate-50); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--slate-200); max-height: 400px; overflow-y: auto;">
                     <!-- Dynamic Household Tree injected here -->
                 </div>
             </div>
             <div class="modal-footer" style="padding: 12px 0 0 0;">
-                <button class="btn btn-primary btn-sm" id="doneHouseholdModalBtn" style="width: 100%;"><i class="fas fa-check"></i> <span data-i18n="btn_save">Done</span></button>
+                <button class="btn btn-primary btn-sm" id="doneHouseholdModalBtn" style="width: 100%;"><i
+                        class="fas fa-check"></i> <span data-i18n="btn_save">Done</span></button>
             </div>
         </div>
     </div>
@@ -1445,14 +1460,18 @@
     <div id="residentDetailModal" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 560px; max-height: 90vh; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <h3><i class="fas fa-id-card" style="color: var(--primary);"></i> <span data-i18n="detail_modal_title">Resident Profile</span></h3>
+                <h3><i class="fas fa-id-card" style="color: var(--primary);"></i> <span
+                        data-i18n="detail_modal_title">Resident Profile</span></h3>
                 <button class="modal-close-btn" id="closeDetailModalBtn">&times;</button>
             </div>
-            <div class="modal-body" id="residentDetailBody" style="display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding-right: 4px;">
+            <div class="modal-body" id="residentDetailBody"
+                style="display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding-right: 4px;">
             </div>
             <div class="modal-footer" style="padding: 12px 20px; display: flex; gap: 8px;">
-                <button class="btn btn-primary btn-sm" id="detailEditBtn" style="flex: 1;"><i class="fas fa-edit"></i> <span data-i18n="btn_edit">Edit</span></button>
-                <button class="btn btn-danger btn-sm" id="detailDeleteBtn" style="flex: 1;"><i class="fas fa-trash-alt"></i> <span data-i18n="btn_delete">Delete</span></button>
+                <button class="btn btn-primary btn-sm" id="detailEditBtn" style="flex: 1;"><i class="fas fa-edit"></i>
+                    <span data-i18n="btn_edit">Edit</span></button>
+                <button class="btn btn-danger btn-sm" id="detailDeleteBtn" style="flex: 1;"><i
+                        class="fas fa-trash-alt"></i> <span data-i18n="btn_delete">Delete</span></button>
             </div>
         </div>
     </div>
@@ -2559,6 +2578,9 @@
                 // If a Family Head is deleted, unlink any members connected to them
                 if (rec && rec.familyRole === 'head') {
                     residents.forEach(r => {
+                        if (r.familyRole === 'member') r.familyHeadId = '';
+                    });
+                    residents.forEach(r => {
                         if (r.familyHeadId === id) {
                             r.familyHeadId = "";
                             r.updatedAt = new Date().toISOString();
@@ -2684,7 +2706,7 @@
 
                 const familyClaimObjs = getHouseholdClaimsInCurrentCampaign(rec.id, rec.familyRole, rec.familyHeadId);
                 const familyClaims = [...new Set(familyClaimObjs.map(c => c.itemName).filter(Boolean).filter(name => name !== '—'))].filter(name => !ownClaims.some(own => own.toLowerCase() === name.toLowerCase()));
-                
+
                 const currentCampaign = campaigns.find(c => c.id === activeCampaignId);
                 const campaignItems = currentCampaign ? (currentCampaign.items || []) : [];
                 const totalQuota = campaignItems.length > 0 ? campaignItems.length : 1;
@@ -2720,7 +2742,7 @@
 
                 // Build HTML
                 let badgeHtml = "";
-                
+
                 // 1. Own Claims (Green) - only show if this resident has claims in current campaign
                 if (isClaimedInCurrentCampaign(rec)) {
                     ownClaims.forEach(itemName => {
@@ -2744,7 +2766,7 @@
                         badgeHtml += `<span class="badge" style="background: #fffbeb; color: #b45309; border-color: #fde68a; font-size: 0.65rem; margin-top: 4px; padding: 2px 8px; font-weight: 700; width: fit-content; display: inline-flex; margin-left: 6px;" title="${escapeHtml(tooltip)}"><i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i> ${dcText}${escapeHtml(itemName)}</span>`;
                     });
                 }
-                
+
                 donationBadge = badgeHtml;
 
                 html += `<tr class="fade-in-row" onclick="openResidentDetail('${rec.id}')">
@@ -2877,9 +2899,13 @@
 
                 if (r.familyRole === 'member' && r.familyHeadId) {
                     const head = residents.find(h => h.id === r.familyHeadId);
-                    enriched.familyHeadIdNumber = head ? head.idNumber : '';
+                    enriched.familyHeadIdNumber = head ? head.idNumber : (r.familyHeadIdNumber || '');
+                    enriched.familyHead = head ? `${head.name} (${head.idNumber})` : (r.familyHead || '');
+                    enriched.familyHeadName = head ? head.name : (r.familyHeadName || '');
                 } else {
                     enriched.familyHeadIdNumber = '';
+                    enriched.familyHead = '';
+                    enriched.familyHeadName = '';
                 }
                 if (r.familyRole === 'head') {
                     const members = residents.filter(m => m.familyHeadId === r.id);
@@ -2887,6 +2913,7 @@
                 } else {
                     enriched.familyMemberIdNumbers = '';
                 }
+                if (!enriched.familyRole) enriched.familyRole = r.familyRole || '';
 
                 const history = r.claimHistory || {};
                 const currentEntry = history[activeCampaignId];
@@ -2923,6 +2950,13 @@
             });
 
             const payload = [...enriched].sort((a, b) => new Date(a.createdAt || a.updatedAt || 0) - new Date(b.createdAt || b.updatedAt || 0));
+
+            const heads = payload.filter(r => r.familyRole === 'head' && r.familyMemberIdNumbers);
+            const members = payload.filter(r => r.familyRole === 'member' && r.familyHeadIdNumber);
+            console.log('[Sync] Payload size:', payload.length, 'Heads with members:', heads.length, 'Members with head:', members.length);
+            if (members.length === 0 && heads.length === 0 && payload.length > 0) {
+                console.warn('[Sync] WARNING: No family linkages in payload! Sample member:', payload.find(r => r.familyRole === 'member'));
+            }
             const deletedResidentIds = JSON.parse(localStorage.getItem('deleted_resident_ids') || '[]');
             const deletedCampaignIds = JSON.parse(localStorage.getItem('deleted_campaign_ids') || '[]');
 
@@ -2992,25 +3026,34 @@
                 if (!existing) {
                     mergedResidentsMap.set(canonicalKey, r);
                 } else {
-                    // Local records always win over cloud (local is source of truth after manual input)
                     const existingSource = existing._source || 'cloud';
                     const newSource = r._source || 'cloud';
                     if (newSource === 'local' && existingSource !== 'local') {
                         mergedResidentsMap.set(canonicalKey, r);
                     } else if (existingSource === 'local' && newSource !== 'local') {
-                        // keep existing (local)
+                        // keep existing (local always wins when both are same source type)
                     } else {
-                        const existingTime = new Date(existing.updatedAt || 0).getTime();
-                        const newTime = new Date(r.updatedAt || 0).getTime();
-                        if (newTime >= existingTime) {
+                        const existingLocal = existing._localOnly === true;
+                        const newLocal = r._localOnly === true;
+                        if (newLocal && !existingLocal) {
                             mergedResidentsMap.set(canonicalKey, r);
+                        } else if (!newLocal && existingLocal) {
+                            // keep existing (local)
+                        } else {
+                            const existingTime = new Date(existing.updatedAt || 0).getTime();
+                            const newTime = new Date(r.updatedAt || 0).getTime();
+                            if (newTime >= existingTime) {
+                                mergedResidentsMap.set(canonicalKey, r);
+                            }
                         }
                     }
                 }
             };
 
-            cloudResidents.forEach(r => { r._source = 'cloud'; upsertResident(r); });
-            residents.forEach(r => { r._source = 'local'; upsertResident(r); });
+            // Local records are the source of truth after user input; tag them so they win cloud on restore
+            // cloudResidents.forEach(r => { r._source = 'cloud'; upsertResident(r); });
+            cloudResidents.forEach(r => { r._source = 'cloud'; r._localOnly = false; upsertResident(r); });
+            residents.forEach(r => { r._source = 'local'; r._localOnly = true; upsertResident(r); });
 
             residents = Array.from(mergedResidentsMap.values()).filter(r => !isDeleted(r));
             console.log('[Restore] Cloud records upserted:', cloudResidents.length);
@@ -3153,47 +3196,41 @@
                     return;
                 }
                 try {
-                    // Fetch existing cloud data first
-                    let cloudData = [];
-                    try {
-                        const fetchResponse = await fetch(url);
-                        if (fetchResponse.ok) {
-                            const text = await fetchResponse.text();
-                            cloudData = text ? JSON.parse(text) : [];
-                        }
-                    } catch (e) {
-                        console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
+                    const fetchResponse = await fetch(url.split('#')[0] + (url.split('#')[0].includes('?') ? '&' : '?') + '_=' + Date.now(), { cache: 'no-store' });
+                    if (fetchResponse.ok) {
+                        const text = await fetchResponse.text();
+                        cloudData = text ? JSON.parse(text) : [];
+                        if (!Array.isArray(cloudData)) cloudData = [];
+                        fetchSuccess = true;
                     }
+                } catch (e) {
+                    console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
+                }
 
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        mode: 'cors',
-                        redirect: 'follow',
-                        headers: { 'Content-Type': 'text/plain' },
-                        body: getSyncPayload()
-                    });
-                    if (response.ok) {
-                        showToast(t("btn_sync"), localStorage.getItem('app_language') === 'zh' ? '修改已自动同步到 Google 表格。' : (localStorage.getItem('app_language') === 'ms' ? 'Perubahan disimpan ke Google Sheets.' : 'Changes saved silently to Google Sheets.'), "success");
-                    }
-                } catch (err) {
-                    console.error("Auto sync error:", err);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    mode: 'cors',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: getSyncPayload()
+                });
+                if (response.ok) {
+                    showToast(t("btn_sync"), localStorage.getItem('app_language') === 'zh' ? '修改已自动同步到 Google 表格。' : (localStorage.getItem('app_language') === 'ms' ? 'Perubahan disimpan ke Google Sheets.' : 'Changes saved silently to Google Sheets.'), "success");
                 }
             } else {
                 const syncKey = getOrCreateSyncKey();
                 const bucketId = "7qW5hJ6mK8pL9sN2vR3xYt";
                 try {
-                    // Fetch existing cloud data first
-                    let cloudData = [];
-                    try {
-                        const fetchResponse = await fetch(`https://kvdb.io/${bucketId}/${syncKey}`);
-                        if (fetchResponse.ok) {
-                            const text = await fetchResponse.text();
-                            cloudData = text ? JSON.parse(text) : [];
-                        }
-                    } catch (e) {
-                        console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
+                    const fetchResponse = await fetch(`https://kvdb.io/${bucketId}/${syncKey}`);
+                    if (fetchResponse.ok) {
+                        const text = await fetchResponse.text();
+                        cloudData = text ? JSON.parse(text) : [];
                     }
+                } catch (e) {
+                    console.warn("Failed to fetch cloud data during silent sync, proceeding...", e);
+                }
 
+                try {
                     await fetch(`https://kvdb.io/${bucketId}/${syncKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -3244,7 +3281,7 @@
                     let cloudData = [];
                     let fetchSuccess = false;
                     try {
-                        const fetchResponse = await fetch(url);
+                        const fetchResponse = await fetch(url.split('#')[0] + (url.split('#')[0].includes('?') ? '&' : '?') + '_=' + Date.now(), { cache: 'no-store' });
                         if (fetchResponse.ok) {
                             try {
                                 const text = await fetchResponse.text();
@@ -3385,7 +3422,7 @@
                     restoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
 
                     try {
-                        const response = await fetch(url);
+                        const response = await fetch(url.split('#')[0] + (url.split('#')[0].includes('?') ? '&' : '?') + '_=' + Date.now(), { cache: 'no-store' });
                         if (!response.ok) throw new Error("Failed to contact Google Sheets Apps Script API.");
 
                         const text = await response.text();
@@ -3776,33 +3813,33 @@
 
         // ----------------------------- Household Family Tree Logic -----------------------------
         const householdModal = document.getElementById("householdModal");
-        
+
         function openHouseholdModal(residentId) {
             const resident = residents.find(r => r.id === residentId);
             if (!resident) return;
-            
+
             let headId = resident.familyRole === 'head' ? resident.id : (resident.familyHeadId || resident.id);
             const head = residents.find(r => r.id === headId);
             const members = residents.filter(r => r.familyRole === 'member' && r.familyHeadId === headId);
-            
+
             const container = document.getElementById("householdTreeContainer");
             const lang = localStorage.getItem('app_language') || 'en';
-            
+
             let html = `
                 <div style="font-weight: 700; margin-bottom: 12px; font-size: 1.1rem; color: var(--slate-800); border-bottom: 2px solid var(--slate-200); padding-bottom: 8px;">
                     <i class="fas fa-home" style="color: var(--primary);"></i> ${lang === 'zh' ? '家庭户口' : (lang === 'ms' ? 'Isi Rumah' : 'Household')}
                 </div>
             `;
-            
+
             // Function to generate the person card HTML
             const generatePersonCard = (person, isHead) => {
                 const badgeColor = isHead ? "var(--primary)" : "var(--info)";
                 const badgeBg = isHead ? "#eff6ff" : "#f0f9ff";
-                const roleText = isHead ? 
-                    (lang === 'zh' ? '户主' : (lang === 'ms' ? 'Ketua' : 'Head')) : 
+                const roleText = isHead ?
+                    (lang === 'zh' ? '户主' : (lang === 'ms' ? 'Ketua' : 'Head')) :
                     (lang === 'zh' ? '成员' : (lang === 'ms' ? 'Ahli' : 'Member'));
                 const icon = isHead ? "fa-crown" : "fa-user";
-                
+
                 let claimsText = "";
                 if (isClaimedInCurrentCampaign(person)) {
                     const entry = getResidentCampaignEntry(person, activeCampaignId);
@@ -3824,7 +3861,7 @@
                     </div>
                 `;
             };
-            
+
             // Add the head if it exists (for a single person household, they are their own head)
             if (head) {
                 html += `<div style="margin-bottom: 10px;">${generatePersonCard(head, true)}</div>`;
@@ -3834,7 +3871,7 @@
                     <i class="fas fa-exclamation-triangle"></i> ${lang === 'zh' ? '户主档案已被删除或丢失。' : 'Family Head record is deleted or missing.'}
                 </div>`;
             }
-            
+
             // Add all members
             if (members.length > 0) {
                 html += `<div style="margin-left: 20px; border-left: 2px solid var(--slate-300); padding-left: 15px;">`;
@@ -3843,11 +3880,11 @@
                 });
                 html += `</div>`;
             }
-            
+
             container.innerHTML = html;
             householdModal.style.display = "flex";
         }
-        
+
         document.getElementById("closeHouseholdModalBtn").addEventListener("click", () => householdModal.style.display = "none");
         document.getElementById("doneHouseholdModalBtn").addEventListener("click", () => householdModal.style.display = "none");
 
@@ -4083,6 +4120,8 @@
 
             if (confirm(warnMsg)) {
                 residents = [];
+                localStorage.removeItem('deleted_resident_ids');
+                localStorage.removeItem('deleted_campaign_ids');
                 await persistData();
                 clearForm();
                 showToast(t("btn_clear_all"), t("toast_db_cleared"), "warning");
@@ -4199,7 +4238,7 @@
                         aidItem: aidItem,
                         claimDate: claimDate,
                         claimHistory: (() => {
-                            try { return JSON.parse(claimHistoryRaw || '{}'); } catch(e) { return {}; }
+                            try { return JSON.parse(claimHistoryRaw || '{}'); } catch (e) { return {}; }
                         })(),
                         donationHistory: [],
                         updatedAt: new Date().toISOString()
